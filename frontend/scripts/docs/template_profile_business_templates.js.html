@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: template/profile_business_templates.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: template/profile_business_templates.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * Generates the business profile page template.
+ * @function getBusinessProfilePageTemplate
+ * @param {Object} currentUser - The current user object.
+ * @param {Array} currentOrders - The list of current orders.
+ * @param {Array} currentOffers - The list of current offers.
+ * @param {Array} currentReviews - The list of current reviews.
+ * @returns {string} The HTML string for the business profile page.
+ */
+function getBusinessProfilePageTemplate(
+  currentUser,
+  currentOrders,
+  currentOffers,
+  currentReviews
+) {
+  return `&lt;section id="business" class="business_section section_group d_flex_cs_gxl ">
+                &lt;section class="business_section_profile d_flex_cs_gl f_d_c">
+                    &lt;div id="business_profile" class="d_flex_cs_gxl f_d_c about_me_section pos_rel w_full section_group_w_border">
+                        
+                        ${getBusinessProfileTemplate(currentUser)}
+                        
+                    &lt;/div>
+                    &lt;button onclick="redirectToBusinessProfile(${
+                      currentUser.user
+                    })" class="std_btn btn_prime d_flex_cc_gm w_full">
+                        &lt;img src="./assets/icons/visibility.svg" alt="" srcset="">
+                        zum öffentlichen Profil
+                    &lt;/button>
+                &lt;/section>
+
+                &lt;section class="d_flex_cs_gxl f_d_c business_section_content">
+                    &lt;section class="section_group_w_border d_flex_cs_gm f_d_c ">
+                        &lt;h2 class="font_prime_color">Meine Aufträge&lt;/h2>
+                        &lt;ul class="order_list d_flex_cc_gm f_d_c" id="business_order_list">
+                            ${getBusinessOrderTemplateList()}
+                        &lt;/ul>
+                    &lt;/section>
+                    &lt;section id="business_offer_list" class="section_group_w_border d_flex_cs_gl f_d_c ">
+                        ${getBusinessOfferTemplateList(currentOffers)}
+                        ${getOfferPagination(
+                          calculateNumPages(allOffersLength, PAGE_SIZE),
+                          currentBusinessOfferListFilter.page
+                        )}
+                    &lt;/section>
+                    &lt;section class="section_group w_full d_flex_cs_gl f_d_c">
+                        &lt;div class="w_full d_flex_cs_gm review_header">
+                            &lt;h2 class="font_prime_color">Bewertungen&lt;/h2>
+                            &lt;div class="d_flex_cc_gm">
+                                &lt;p for="review_filter" class="ws_nw">Sortieren nach:&lt;/p>
+                                &lt;select onchange="changeReviewFilterProfile(this)" id="review_filter" class="input_field">
+                                    &lt;option value="-updated_at" selected>Neueste zuerst&lt;/option>
+                                    &lt;option value="updated_at">Älteste zuerst&lt;/option>
+                                    &lt;option value="-rating">Höchste Bewertung&lt;/option>
+                                    &lt;option value="rating">Niedrigste Bewertung&lt;/option>
+                                &lt;/select>
+                            &lt;/div>
+                        &lt;/div>
+
+                        &lt;div class=" d_flex_cs_gm f_d_c w_full" id="business_review_list">
+
+                            &lt;!-- Reviews -->
+                            ${getReviewWLinkTemplateList(currentReviews)}
+                        &lt;/div>
+
+                        &lt;div class="w_full d_flex_cc_gm review_footer">
+                            &lt;hr>
+                            &lt;p class="link d_flex_cc_gm">
+                                &lt;img src="./assets/icons/add.svg" alt="" srcset="">
+                                Mehr anzeigen
+                            &lt;/p>
+                        &lt;/div>
+                    &lt;/section>
+                &lt;/section>
+
+            &lt;!-- Dialogs -->
+            ${getBusinessDialogTemplate()}
+            ${getOfferDialogWrapperTemplate()}
+            &lt;/section>`;
+}
+
+/**
+ * Generates the business offer template list.
+ * @function getBusinessOfferTemplateList
+ * @param {Array} currentOffers - The list of current offers.
+ * @returns {string} The HTML string for the business offer template list.
+ */
+function getBusinessOfferTemplateList(currentOffers) {
+  if (!Array.isArray(currentOffers)) {
+    return `
+            &lt;div class="d_flex_cc_gm f_d_r_resp_c">
+                &lt;h2 class="font_prime_color">Keine Angebote verfügbar&lt;/h2>
+            &lt;/div>`;
+  }
+  let offerListHTML = `
+        &lt;div class="d_flex_cc_gm f_d_r_resp_c">
+            &lt;h2 class="font_prime_color">Meine Angebote&lt;/h2>
+            &lt;button onclick="openOfferDialog()" class="std_btn btn_prime pad_s d_flex_cc_gm">Angebot hinzufügen 
+                &lt;img src="./assets/icons/add_white.svg" alt="" srcset="">
+            &lt;/button>
+        &lt;/div>`;
+
+  currentOffers.forEach((offer) => {
+    user = getUserInfo(offer.user);
+    offerListHTML += getBusinessOfferTemplate(offer, user);
+  });
+
+  return offerListHTML;
+}
+
+/**
+ * Generates the business order template list.
+ * @function getBusinessOrderTemplateList
+ * @returns {string} The HTML string for the business order template list.
+ */
+function getBusinessOrderTemplateList() {
+  let orderListHTML = ``;
+
+  currentOrders.forEach((order) => {
+    orderListHTML += getBusinessOrderTemplate(order);
+  });
+
+  return orderListHTML;
+}
+
+/**
+ * Generates the business order template.
+ * @function getBusinessOrderTemplate
+ * @param {Object} order - The order object.
+ * @returns {string} The HTML string for the business order.
+ */
+function getBusinessOrderTemplate(order) {
+  if (!order || typeof order !== "object" || !order.id) {
+    return `
+            &lt;li class="order_item_box d_flex_cc_gm w_full f_d_c">
+                &lt;p>Ungültige Bestellung.&lt;/p>
+            &lt;/li>`;
+  }
+  customer_user = getUserInfo(order.customer_user);
+  return `
+                        &lt;li class="order_item_box d_flex_cc_gm w_full f_d_c">
+                            &lt;button open=false class="std_btn btn_prime pad_s order_btn_close d_flex_cc_gm"
+                                onclick="toggleOpen(this)">
+                                &lt;img src="./assets/icons/close.png" alt="" srcset="">
+                            &lt;/button>
+                            &lt;div class="order_item d_flex_cs_gm">
+                                &lt;div class="order_info ">
+                                    &lt;h3>Bestellung #${order.id}&lt;/h3>
+                                &lt;p>Datum: ${formatDate(order.created_at)}&lt;/p>
+                                &lt;/div>
+                                &lt;div open=false closable="true" onclick="toggleOpen(this); stopProp(event)" status="${
+                                  order.status
+                                }"
+                                    class="order_status d_flex_cc_gm c_pointer dropdown_wrapper">
+                                    &lt;div class="order_status_icon">&lt;/div>
+                                    &lt;p>${orderStatus[order.status]}&lt;/p>
+                                    &lt;img src="./assets/icons/arrow_drop_down.svg" alt="">
+                                    &lt;div class="dropdown_box">
+                                        &lt;ul class="card dropdown_content d_flex_cc_gm f_d_c" >
+                                            &lt;li onclick="changeOrderStatus('in_progress',${
+                                              order.id
+                                            } )">In Bearbeitung&lt;/li>
+                                            &lt;li onclick="changeOrderStatus('completed',${
+                                              order.id
+                                            } )">Abgeschlossen&lt;/li>
+                                            &lt;li onclick="changeOrderStatus('cancelled',${
+                                              order.id
+                                            } )">Abgebrochen&lt;/li>
+                                        &lt;/ul>
+                                    &lt;/div>
+                                &lt;/div>
+                            &lt;/div>
+                            &lt;div class="w_full order_item_detail d_flex_cs_gm f_d_c">
+                                &lt;div class="order_info d_flex_cs_gm f_d_c">
+                                    &lt;p class="link" onclick="redirectToBusinessProfile(${
+                                      order.customer_user
+                                    })">&lt;strong>Käufer:&lt;/strong> ${
+    customer_user.user.first_name
+  } ${customer_user.user.last_name}&lt;/p>
+                                    &lt;p>&lt;strong>Titel:&lt;/strong> ${
+                                      order.title
+                                    }&lt;/p>
+                                    &lt;p>&lt;strong>Lieferzeit:&lt;/strong> ${
+                                      order.delivery_time_in_days
+                                    } Tage&lt;/p>
+                                    &lt;p>&lt;strong>Revisionen:&lt;/strong> ${getOrderRevisionTemplate(
+                                      order.revisions
+                                    )} &lt;/p>
+                                    &lt;p>&lt;strong>Preis:&lt;/strong> ${parseFloat(
+                                      order.price
+                                    ).toFixed(2)}€&lt;/p>
+                                    &lt;ul class="feature_list">
+                                    ${getOrderFeatureListTemplate(
+                                      order.features
+                                    )}
+                                    &lt;/ul>
+                                &lt;/div>
+                                &lt;hr>
+                            &lt;/div>
+                        &lt;/li>`;
+}
+
+/**
+ * Generates the order feature list template.
+ * @function getOrderFeatureListTemplate
+ * @param {Array} features - The list of features.
+ * @returns {string} The HTML string for the order feature list.
+ */
+function getOrderFeatureListTemplate(features) {
+  if (!Array.isArray(features) || features.length === 0) {
+    return `&lt;li>Keine Features verfügbar.&lt;/li>`;
+  }
+
+  let featureList = "";
+
+  features.forEach((feature) => {
+    featureList += `&lt;li>${feature}&lt;/li>`;
+  });
+  return featureList;
+}
+
+/**
+ * Generates the order revision template based on the number of revisions.
+ * @function getOrderRevisionTemplate
+ * @param {number} revisions - The number of revisions.
+ * @returns {string} The HTML string for the revision information.
+ */
+function getOrderRevisionTemplate(revisions) {
+  if (revisions &lt; 0) {
+    return "Unbegrenzte";
+  } else {
+    return revisions;
+  }
+}
+
+/**
+ * Generates the business profile template.
+ * @function getBusinessProfileTemplate
+ * @param {Object} currentUser - The current user object.
+ * @returns {string} The HTML string for the business profile.
+ */
+function getBusinessProfileTemplate(currentUser) {
+  if (!currentUser) {
+    return `&lt;div>Profilinformationen sind nicht verfügbar.&lt;/div>`;
+  }
+  return `      
+                    &lt;button onclick="openDialog('business_dialog')"
+                        class="d_flex_cc_gl btn_round_l btn_edit abs_pos_edit_btn">
+                        &lt;img src="./assets/icons/edit.svg" alt="">
+                    &lt;/button>
+                    &lt;div class="d_flex_cs_gm f_d_c profile_detail">
+                        &lt;h1 class="font_prime_color w_full">Mein Profil&lt;/h1>
+                        &lt;img class="profile_img" src="${getPersonImgPath(
+                          currentUser.file
+                        )}" alt="Profilbild">
+                        &lt;div class="w_full">
+                            &lt;h3>${currentUser.first_name} ${
+    currentUser.last_name
+  }&lt;/h3>
+                            &lt;p class="font_sec_color">@${
+                              currentUser.username
+                            }&lt;/p>
+                        &lt;/div>
+                        &lt;p>
+                        ${currentUser.description}
+                        &lt;/p>
+                    &lt;/div>
+                    &lt;div class="d_flex_cs_gl f_d_c">
+                        &lt;div class="d_flex_cs_gm f_d_c w_full">
+                            &lt;hr class="about_me_top_hr">
+                            &lt;p class="d_flex_cc_gm">
+                                &lt;img src="./assets/icons/mail.svg" alt="" srcset="">
+                                ${currentUser.email}
+                            &lt;/p>
+                            &lt;p class="d_flex_cc_gm">
+                                &lt;img src="./assets/icons/call.svg" alt="" srcset="">
+                                ${currentUser.tel}
+                            &lt;/p>
+                            &lt;hr>
+                            &lt;p class="d_flex_cc_gm">
+                                &lt;img src="./assets/icons/location_on.svg" alt="" srcset="">
+                                Standort: ${currentUser.location}
+                            &lt;/p>
+                            &lt;p class="d_flex_cc_gm">
+                                &lt;img src="./assets/icons/person.svg" alt="" srcset="">
+                                Mitglied seit ${formatToMonthYearAndDay(
+                                  currentUser.created_at
+                                )}
+                            &lt;/p>
+                            &lt;hr>
+                            &lt;p class="d_flex_cc_gm">
+                                &lt;img src="./assets/icons/schedule.svg" alt="" srcset="">
+                                Verfügbarkeit: ${currentUser.working_hours}
+                            &lt;/p>
+                        &lt;/div>
+                    &lt;/div>`;
+}
+
+/**
+ * Generates the business dialog template.
+ * @function getBusinessDialogTemplate
+ * @returns {string} The HTML string for the business dialog.
+ */
+function getBusinessDialogTemplate() {
+  return `
+        &lt;section id="business_dialog"
+                class="dialog d_flex_cc_gl pad_m d_none">
+                ${getBusinessDialogFormTemplate()}
+            &lt;/section>`;
+}
+
+/**
+ * Generates the business dialog form template.
+ * @function getBusinessDialogFormTemplate
+ * @returns {string} The HTML string for the business dialog form.
+ */
+function getBusinessDialogFormTemplate() {
+  if (!currentUser) {
+    return `&lt;div>Es ist ein Fehler aufgetreten&lt;/div>`;
+  }
+  return `&lt;div onclick="stopProp(event)" class="m_auto dialog_content small_form d_flex_cc_gl f_d_c">
+
+                    &lt;form onsubmit="businessEditOnsubmit(event)" class="d_flex_cc_gm f_d_c w_full pos_rel">
+                        &lt;button type="button" onclick="abboardBusinessEdit()"
+                            class="d_flex_cc_gl btn_round_l btn_edit abs_pos_edit_btn_m">
+                            &lt;img src="./assets/icons/close_black.svg" alt="">
+                        &lt;/button>
+                        &lt;h2 class="font_prime_color p_top_s">Profil editieren&lt;/h2>
+                        &lt;div class="image_input_box">
+                            &lt;img id="business_profile_img_input_output" class="profile_img_l" src="${getPersonImgPath(
+                              currentUser.file
+                            )}" alt="Aktuelles Profilbild">
+                            &lt;div onclick="clickFileInput('business_profile_img_input')"
+                                class="file_input d_flex_cc_gl btn_round_m btn_edit btn_border_secondary">
+                                &lt;img src="./assets/icons/photo_camera.svg" alt="" srcset="">
+                                &lt;input onchange="changeCurrentFiles(this)" type="file" id="business_profile_img_input"
+                                    accept="image/*">
+                            &lt;/div>
+                        &lt;/div>
+                        &lt;p id="img_error" class="form_error d_none">*falsches Dateiformat (png, jpg und jpeg)&lt;/p>
+                        &lt;p class="font_sec_color">@${currentUser.username}&lt;/p>
+                        &lt;div class="form_group">
+                            &lt;label for="business_edit_first_name">Vorname:&lt;/label>
+                            &lt;input type="text" id="business_edit_first_name" name="first_name" value="${
+                              currentUser.first_name
+                            }" required
+                                class="input_field" autocomplete="off">
+                        &lt;/div>
+                        &lt;div class="form_group">
+                            &lt;label for="business_edit_last_name">Nachname:&lt;/label>
+                            &lt;input type="text" id="business_edit_last_name" name="last_name" value="${
+                              currentUser.last_name
+                            }" required
+                                class="input_field" autocomplete="off">
+                        &lt;/div>
+                        &lt;div class="form_group">
+                            &lt;label for="business_edit_email">E-Mail-Adresse:&lt;/label>
+                            &lt;input type="email" id="business_edit_email" name="email" value="${
+                              currentUser.email
+                            }" required
+                                class="input_field" autocomplete="off">
+                        &lt;/div>
+                        &lt;div class="form_group">
+                            &lt;label for="business_edit_tel">Telefonnummer:&lt;/label>
+                            &lt;input type="number" id="business_edit_tel" name="tel" value="${
+                              currentUser.tel
+                            }" required
+                                class="input_field" autocomplete="off">
+                        &lt;/div>
+                        &lt;div class="form_group">
+                            &lt;label for="business_edit_location">Standort:&lt;/label>
+                            &lt;input class="input_field" type="text" id="business_edit_location" name="location"
+                                value="${currentUser.location}">
+                        &lt;/div>
+                        &lt;div class="form_group">
+                            &lt;label for="description">Beschreibung:&lt;/label>
+                            &lt;textarea class="input_field" type="text" id="description"
+                                name="description">${
+                                  currentUser.description
+                                }&lt;/textarea>
+                        &lt;/div>
+                        &lt;div class="form_group">
+                            &lt;label for="working_hours">Verfügbarkeit:&lt;/label>
+                            &lt;input class="input_field" type="text" id="working_hours" name="working_hours"
+                                value="${currentUser.working_hours}">
+                        &lt;/div>
+                        &lt;div class="form_actions d_flex_cc_gm f_d_r_resp_c">
+                            &lt;button type="submit" class="std_btn btn_prime pad_s">Speichern&lt;/button>
+                            &lt;button onclick="abboardBusinessEdit()" type="button"
+                                class="std_btn btn_secondary pad_s">Abbrechen&lt;/button>
+                        &lt;/div>
+                    &lt;/form>
+                &lt;/div>`;
+}
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#abboardBusinessEdit">abboardBusinessEdit</a></li><li><a href="global.html#abboardCustomerEdit">abboardCustomerEdit</a></li><li><a href="global.html#activatedButton">activatedButton</a></li><li><a href="global.html#businessEditOnsubmit">businessEditOnsubmit</a></li><li><a href="global.html#changeOrderStatus">changeOrderStatus</a></li><li><a href="global.html#changeReviewFilterBusinessProfile">changeReviewFilterBusinessProfile</a></li><li><a href="global.html#changeReviewFilterCustomerProfile">changeReviewFilterCustomerProfile</a></li><li><a href="global.html#changeReviewFilterProfile">changeReviewFilterProfile</a></li><li><a href="global.html#changeReviewFilterSingleOffer">changeReviewFilterSingleOffer</a></li><li><a href="global.html#checkAuth">checkAuth</a></li><li><a href="global.html#checkAuthLogin">checkAuthLogin</a></li><li><a href="global.html#currentBusinessOfferListFilter">currentBusinessOfferListFilter</a></li><li><a href="global.html#currentBusinessUser">currentBusinessUser</a></li><li><a href="global.html#currentCustomerUser">currentCustomerUser</a></li><li><a href="global.html#currentOfferBusinessProfileFilter">currentOfferBusinessProfileFilter</a></li><li><a href="global.html#currentOfferCount">currentOfferCount</a></li><li><a href="global.html#currentOfferListFilter">currentOfferListFilter</a></li><li><a href="global.html#currentOpenedDetail">currentOpenedDetail</a></li><li><a href="global.html#currentOrdering">currentOrdering</a></li><li><a href="global.html#currentOrders">currentOrders</a></li><li><a href="global.html#currentSingleOfferUser">currentSingleOfferUser</a></li><li><a href="global.html#currentmaxDeliveryTime">currentmaxDeliveryTime</a></li><li><a href="global.html#customerEditOnsubmit">customerEditOnsubmit</a></li><li><a href="global.html#getBaseInfo">getBaseInfo</a></li><li><a href="global.html#getBusinessDialogFormTemplate">getBusinessDialogFormTemplate</a></li><li><a href="global.html#getBusinessDialogTemplate">getBusinessDialogTemplate</a></li><li><a href="global.html#getBusinessOfferTemplateList">getBusinessOfferTemplateList</a></li><li><a href="global.html#getBusinessOrderTemplate">getBusinessOrderTemplate</a></li><li><a href="global.html#getBusinessOrderTemplateList">getBusinessOrderTemplateList</a></li><li><a href="global.html#getBusinessProfileDataTmplate">getBusinessProfileDataTmplate</a></li><li><a href="global.html#getBusinessProfilePageTemplate">getBusinessProfilePageTemplate</a></li><li><a href="global.html#getBusinessProfileTemplate">getBusinessProfileTemplate</a></li><li><a href="global.html#getCustomerDetailTemplate">getCustomerDetailTemplate</a></li><li><a href="global.html#getCustomerDialogFormTemplate">getCustomerDialogFormTemplate</a></li><li><a href="global.html#getCustomerDialogTemplate">getCustomerDialogTemplate</a></li><li><a href="global.html#getCustomerOrderTemplate">getCustomerOrderTemplate</a></li><li><a href="global.html#getCustomerOrderTemplateList">getCustomerOrderTemplateList</a></li><li><a href="global.html#getCustomerProfilePageTemplate">getCustomerProfilePageTemplate</a></li><li><a href="global.html#getCustomerProfileTemplate">getCustomerProfileTemplate</a></li><li><a href="global.html#getCustomerReviewDialogWrapperTemplate">getCustomerReviewDialogWrapperTemplate</a></li><li><a href="global.html#getFeatureListTemplate">getFeatureListTemplate</a></li><li><a href="global.html#getFullProfileData">getFullProfileData</a></li><li><a href="global.html#getGreetingBoxTemplate">getGreetingBoxTemplate</a></li><li><a href="global.html#getOrderBtnTemplate">getOrderBtnTemplate</a></li><li><a href="global.html#getOrderFeatureListTemplate">getOrderFeatureListTemplate</a></li><li><a href="global.html#getOrderRevisionTemplate">getOrderRevisionTemplate</a></li><li><a href="global.html#getRevisionTemplate">getRevisionTemplate</a></li><li><a href="global.html#getSendOrderDialogContentTemplate">getSendOrderDialogContentTemplate</a></li><li><a href="global.html#getShowOrderDialogContentTemplate">getShowOrderDialogContentTemplate</a></li><li><a href="global.html#getSingleOfferDetailTemplate">getSingleOfferDetailTemplate</a></li><li><a href="global.html#getsingleOfferHeaderTemplate">getsingleOfferHeaderTemplate</a></li><li><a href="global.html#goToOfferPage">goToOfferPage</a></li><li><a href="global.html#guestLogin">guestLogin</a></li><li><a href="global.html#indexInit">indexInit</a></li><li><a href="global.html#init">init</a></li><li><a href="global.html#initBProfile">initBProfile</a></li><li><a href="global.html#initCProfile">initCProfile</a></li><li><a href="global.html#loadBusinessUser">loadBusinessUser</a></li><li><a href="global.html#loadCustomerUser">loadCustomerUser</a></li><li><a href="global.html#loadRenderBusinessBaseInfo">loadRenderBusinessBaseInfo</a></li><li><a href="global.html#loadRenderBusinessReviews">loadRenderBusinessReviews</a></li><li><a href="global.html#loadRenderCustomerReviews">loadRenderCustomerReviews</a></li><li><a href="global.html#loadRenderOffers">loadRenderOffers</a></li><li><a href="global.html#loadRenderSingleOffer">loadRenderSingleOffer</a></li><li><a href="global.html#loadRenderSingleOfferReviews">loadRenderSingleOfferReviews</a></li><li><a href="global.html#loadSingleOfferUser">loadSingleOfferUser</a></li><li><a href="global.html#logInSubmit">logInSubmit</a></li><li><a href="global.html#offerListAbboardDeliveryTime">offerListAbboardDeliveryTime</a></li><li><a href="global.html#offerListAbboardOrdering">offerListAbboardOrdering</a></li><li><a href="global.html#offerListApplyDeliveryTimeFilter">offerListApplyDeliveryTimeFilter</a></li><li><a href="global.html#offerListDeactivateAllRadio">offerListDeactivateAllRadio</a></li><li><a href="global.html#offerListInit">offerListInit</a></li><li><a href="global.html#offerPageLoaded">offerPageLoaded</a></li><li><a href="global.html#onSubmitReviewBusinessProfile">onSubmitReviewBusinessProfile</a></li><li><a href="global.html#onSubmitReviewSingleOffer">onSubmitReviewSingleOffer</a></li><li><a href="global.html#redirectToOfferListWSearch">redirectToOfferListWSearch</a></li><li><a href="global.html#registerSubmit">registerSubmit</a></li><li><a href="global.html#renderBaseInfo">renderBaseInfo</a></li><li><a href="global.html#renderOfferList">renderOfferList</a></li><li><a href="global.html#renderPage">renderPage</a></li><li><a href="global.html#renderSingleOfferDetail">renderSingleOfferDetail</a></li><li><a href="global.html#setGreetingsSection">setGreetingsSection</a></li><li><a href="global.html#singleOfferInit">singleOfferInit</a></li><li><a href="global.html#singleOfferOrderCreate">singleOfferOrderCreate</a></li><li><a href="global.html#updateBusinessProfile">updateBusinessProfile</a></li><li><a href="global.html#updateCustomerProfile">updateCustomerProfile</a></li><li><a href="global.html#updateOfferListFilter">updateOfferListFilter</a></li><li><a href="global.html#updateOfferListFilterMaxDeliveryTime">updateOfferListFilterMaxDeliveryTime</a></li><li><a href="global.html#updateOfferListFilterSearch">updateOfferListFilterSearch</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Mon Feb 03 2025 12:15:56 GMT+0100 (Mitteleuropäische Normalzeit)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: registration.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: registration.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * Checks if the user is authenticated by verifying the presence of an auth token.
+ * If authenticated, redirects to the index page.
+ * @function checkAuth
+ */
+function checkAuth() {
+  if (getAuthToken()) {
+    window.location.href = "./index.html";
+  }
+}
+
+/**
+ * Handles the registration form submission.
+ * Prevents the default form submission behavior, retrieves form data, and calls the registration function.
+ * @function registerSubmit
+ * @param {Event} event - The form submission event.
+ */
+function registerSubmit(event) {
+  event.preventDefault();
+  const data = getFormData(event.target);
+
+  registration(data);
+}
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#abboardBusinessEdit">abboardBusinessEdit</a></li><li><a href="global.html#abboardCustomerEdit">abboardCustomerEdit</a></li><li><a href="global.html#activatedButton">activatedButton</a></li><li><a href="global.html#businessEditOnsubmit">businessEditOnsubmit</a></li><li><a href="global.html#changeOrderStatus">changeOrderStatus</a></li><li><a href="global.html#changeReviewFilterBusinessProfile">changeReviewFilterBusinessProfile</a></li><li><a href="global.html#changeReviewFilterCustomerProfile">changeReviewFilterCustomerProfile</a></li><li><a href="global.html#changeReviewFilterProfile">changeReviewFilterProfile</a></li><li><a href="global.html#changeReviewFilterSingleOffer">changeReviewFilterSingleOffer</a></li><li><a href="global.html#checkAuth">checkAuth</a></li><li><a href="global.html#checkAuthLogin">checkAuthLogin</a></li><li><a href="global.html#currentBusinessOfferListFilter">currentBusinessOfferListFilter</a></li><li><a href="global.html#currentBusinessUser">currentBusinessUser</a></li><li><a href="global.html#currentCustomerUser">currentCustomerUser</a></li><li><a href="global.html#currentOfferBusinessProfileFilter">currentOfferBusinessProfileFilter</a></li><li><a href="global.html#currentOfferCount">currentOfferCount</a></li><li><a href="global.html#currentOfferListFilter">currentOfferListFilter</a></li><li><a href="global.html#currentOpenedDetail">currentOpenedDetail</a></li><li><a href="global.html#currentOrdering">currentOrdering</a></li><li><a href="global.html#currentOrders">currentOrders</a></li><li><a href="global.html#currentSingleOfferUser">currentSingleOfferUser</a></li><li><a href="global.html#currentmaxDeliveryTime">currentmaxDeliveryTime</a></li><li><a href="global.html#customerEditOnsubmit">customerEditOnsubmit</a></li><li><a href="global.html#getBaseInfo">getBaseInfo</a></li><li><a href="global.html#getBusinessDialogFormTemplate">getBusinessDialogFormTemplate</a></li><li><a href="global.html#getBusinessDialogTemplate">getBusinessDialogTemplate</a></li><li><a href="global.html#getBusinessOfferTemplateList">getBusinessOfferTemplateList</a></li><li><a href="global.html#getBusinessOrderTemplate">getBusinessOrderTemplate</a></li><li><a href="global.html#getBusinessOrderTemplateList">getBusinessOrderTemplateList</a></li><li><a href="global.html#getBusinessProfileDataTmplate">getBusinessProfileDataTmplate</a></li><li><a href="global.html#getBusinessProfilePageTemplate">getBusinessProfilePageTemplate</a></li><li><a href="global.html#getBusinessProfileTemplate">getBusinessProfileTemplate</a></li><li><a href="global.html#getCustomerDetailTemplate">getCustomerDetailTemplate</a></li><li><a href="global.html#getCustomerDialogFormTemplate">getCustomerDialogFormTemplate</a></li><li><a href="global.html#getCustomerDialogTemplate">getCustomerDialogTemplate</a></li><li><a href="global.html#getCustomerOrderTemplate">getCustomerOrderTemplate</a></li><li><a href="global.html#getCustomerOrderTemplateList">getCustomerOrderTemplateList</a></li><li><a href="global.html#getCustomerProfilePageTemplate">getCustomerProfilePageTemplate</a></li><li><a href="global.html#getCustomerProfileTemplate">getCustomerProfileTemplate</a></li><li><a href="global.html#getCustomerReviewDialogWrapperTemplate">getCustomerReviewDialogWrapperTemplate</a></li><li><a href="global.html#getFeatureListTemplate">getFeatureListTemplate</a></li><li><a href="global.html#getFullProfileData">getFullProfileData</a></li><li><a href="global.html#getGreetingBoxTemplate">getGreetingBoxTemplate</a></li><li><a href="global.html#getOrderBtnTemplate">getOrderBtnTemplate</a></li><li><a href="global.html#getOrderFeatureListTemplate">getOrderFeatureListTemplate</a></li><li><a href="global.html#getOrderRevisionTemplate">getOrderRevisionTemplate</a></li><li><a href="global.html#getRevisionTemplate">getRevisionTemplate</a></li><li><a href="global.html#getSendOrderDialogContentTemplate">getSendOrderDialogContentTemplate</a></li><li><a href="global.html#getShowOrderDialogContentTemplate">getShowOrderDialogContentTemplate</a></li><li><a href="global.html#getSingleOfferDetailTemplate">getSingleOfferDetailTemplate</a></li><li><a href="global.html#getsingleOfferHeaderTemplate">getsingleOfferHeaderTemplate</a></li><li><a href="global.html#goToOfferPage">goToOfferPage</a></li><li><a href="global.html#guestLogin">guestLogin</a></li><li><a href="global.html#indexInit">indexInit</a></li><li><a href="global.html#init">init</a></li><li><a href="global.html#initBProfile">initBProfile</a></li><li><a href="global.html#initCProfile">initCProfile</a></li><li><a href="global.html#loadBusinessUser">loadBusinessUser</a></li><li><a href="global.html#loadCustomerUser">loadCustomerUser</a></li><li><a href="global.html#loadRenderBusinessBaseInfo">loadRenderBusinessBaseInfo</a></li><li><a href="global.html#loadRenderBusinessReviews">loadRenderBusinessReviews</a></li><li><a href="global.html#loadRenderCustomerReviews">loadRenderCustomerReviews</a></li><li><a href="global.html#loadRenderOffers">loadRenderOffers</a></li><li><a href="global.html#loadRenderSingleOffer">loadRenderSingleOffer</a></li><li><a href="global.html#loadRenderSingleOfferReviews">loadRenderSingleOfferReviews</a></li><li><a href="global.html#loadSingleOfferUser">loadSingleOfferUser</a></li><li><a href="global.html#logInSubmit">logInSubmit</a></li><li><a href="global.html#offerListAbboardDeliveryTime">offerListAbboardDeliveryTime</a></li><li><a href="global.html#offerListAbboardOrdering">offerListAbboardOrdering</a></li><li><a href="global.html#offerListApplyDeliveryTimeFilter">offerListApplyDeliveryTimeFilter</a></li><li><a href="global.html#offerListDeactivateAllRadio">offerListDeactivateAllRadio</a></li><li><a href="global.html#offerListInit">offerListInit</a></li><li><a href="global.html#offerPageLoaded">offerPageLoaded</a></li><li><a href="global.html#onSubmitReviewBusinessProfile">onSubmitReviewBusinessProfile</a></li><li><a href="global.html#onSubmitReviewSingleOffer">onSubmitReviewSingleOffer</a></li><li><a href="global.html#redirectToOfferListWSearch">redirectToOfferListWSearch</a></li><li><a href="global.html#registerSubmit">registerSubmit</a></li><li><a href="global.html#renderBaseInfo">renderBaseInfo</a></li><li><a href="global.html#renderOfferList">renderOfferList</a></li><li><a href="global.html#renderPage">renderPage</a></li><li><a href="global.html#renderSingleOfferDetail">renderSingleOfferDetail</a></li><li><a href="global.html#setGreetingsSection">setGreetingsSection</a></li><li><a href="global.html#singleOfferInit">singleOfferInit</a></li><li><a href="global.html#singleOfferOrderCreate">singleOfferOrderCreate</a></li><li><a href="global.html#updateBusinessProfile">updateBusinessProfile</a></li><li><a href="global.html#updateCustomerProfile">updateCustomerProfile</a></li><li><a href="global.html#updateOfferListFilter">updateOfferListFilter</a></li><li><a href="global.html#updateOfferListFilterMaxDeliveryTime">updateOfferListFilterMaxDeliveryTime</a></li><li><a href="global.html#updateOfferListFilterSearch">updateOfferListFilterSearch</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Mon Feb 03 2025 12:15:56 GMT+0100 (Mitteleuropäische Normalzeit)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

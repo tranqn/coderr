@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: business_profile.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: business_profile.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * Indicates if the offer page is loaded.
+ * @type {boolean}
+ */
+let offerPageLoaded = true;
+
+/**
+ * Stores the current business user.
+ * @type {Object}
+ */
+let currentBusinessUser;
+
+/**
+ * Stores the current offer business profile filter.
+ * @type {Object}
+ * @property {number} page - The current page number.
+ * @property {number} creator_id - The ID of the creator.
+ */
+let currentOfferBusinessProfileFilter = {
+  page: 1,
+  creator_id: 11,
+};
+
+/**
+ * Loads and renders the offers for the business profile.
+ * @async
+ * @function loadRenderOffers
+ * @returns {Promise&lt;void>}
+ */
+async function loadRenderOffers() {
+  currentOfferBusinessProfileFilter.creator_id = currentBusinessUser.user;
+  await setOffersWODetails(currentOfferBusinessProfileFilter);
+  document.getElementById("business_profile_offer_list").innerHTML =
+    getOfferTemplateList(currentOffers) +
+    getOfferPagination(
+      calculateNumPages(allOffersLength, PAGE_SIZE),
+      currentOfferBusinessProfileFilter.page
+    );
+}
+
+/**
+ * Navigates to the specified offer page and updates the offer list filter.
+ * @async
+ * @function goToOfferPage
+ * @param {number} pageNum - The page number to navigate to.
+ * @returns {Promise&lt;void>}
+ */
+async function goToOfferPage(pageNum) {
+  if (pageNum &amp;&amp; offerPageLoaded) {
+    offerPageLoaded = false;
+    currentOfferBusinessProfileFilter.page = pageNum;
+  }
+  await loadRenderOffers();
+  offerPageLoaded = true;
+}
+
+/**
+ * Initializes the business profile page by setting the current user, setting the header,
+ * loading the business user, and rendering the business details, reviews, offers, and base info.
+ * @async
+ * @function initBProfile
+ * @returns {Promise&lt;void>}
+ */
+async function initBProfile() {
+  let response = await setCurrentUser();
+  setHeader();
+  if (!response.ok) {
+    window.location.href = "./login.html";
+  } else {
+    await loadBusinessUser();
+    currentOfferBusinessProfileFilter.creator_id = currentBusinessUser.user;
+    document.getElementById("business_profile_personal_data").innerHTML =
+      getBusinessProfileDataTmplate();
+    await setUsers();
+    await loadRenderBusinessReviews();
+    await loadRenderOffers();
+    await loadRenderBusinessBaseInfo();
+    toggleReviewAddBtn();
+  }
+}
+
+/**
+ * Loads and renders the business base information.
+ * @async
+ * @function loadRenderBusinessBaseInfo
+ * @returns {Promise&lt;void>}
+ */
+async function loadRenderBusinessBaseInfo() {
+  let resp = await setSingleOfferCompletedCount(currentBusinessUser.user);
+  if (resp.ok) {
+    document.getElementById("business_profile_project_count").innerText =
+      resp.data.completed_order_count;
+  }
+  document.getElementById(
+    "business_profile_avg_rating"
+  ).innerHTML = `${meanValueReviews()}&lt;img src="./assets/icons/kid_star.svg" alt="" srcset="">`;
+  document.getElementById("business_profile_review_count").innerText =
+    currentReviews.length;
+  document.getElementById("business_profile_offer_count").innerText =
+    currentOffers.length;
+}
+
+/**
+ * Loads the business user based on the profile ID from the URL parameters.
+ * If the profile ID is not found, redirects to the index page.
+ * If the user type is not business, redirects to the customer profile page.
+ * @async
+ * @function loadBusinessUser
+ * @returns {Promise&lt;void>}
+ */
+async function loadBusinessUser() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const profileId = urlParams.get("id");
+  if (!profileId) {
+    window.location.href = "index.html";
+  } else {
+    let resp = await getData(PROFILE_URL + profileId + "/");
+    if (resp.ok) {
+      if (resp.data.type == "business") {
+        currentBusinessUser = resp.data;
+      } else {
+        window.location.href = `customer_profile.html?id=${resp.data.user}`;
+      }
+    } else {
+      extractErrorMessages(resp.data);
+      showToastMessage(true, extractErrorMessages(resp.data));
+    }
+  }
+}
+
+/**
+ * Loads and renders the reviews for the business user.
+ * @async
+ * @function loadRenderBusinessReviews
+ * @returns {Promise&lt;void>}
+ */
+async function loadRenderBusinessReviews() {
+  await setReviewsForBusinessUser(currentBusinessUser.user);
+  document.getElementById("business_profile_review_list").innerHTML =
+    getReviewWLinkTemplateList(currentReviews);
+}
+
+/**
+ * Changes the review filter for the business profile and reloads the reviews.
+ * @async
+ * @function changeReviewFilterBusinessProfile
+ * @param {HTMLElement} element - The element containing the new review filter value.
+ * @returns {Promise&lt;void>}
+ */
+async function changeReviewFilterBusinessProfile(element) {
+  currentReviewOrdering = element.value;
+  loadRenderBusinessReviews();
+}
+
+/**
+ * Submits a new review for the business profile.
+ * @async
+ * @function onSubmitReviewBusinessProfile
+ * @returns {Promise&lt;void>}
+ */
+async function onSubmitReviewBusinessProfile() {
+  let textInputRef = document.getElementById("review_description_input");
+  if (textInputRef.value != "") {
+    let data = {
+      rating: countStars(),
+      description: textInputRef.value,
+      business_user: currentBusinessUser.user,
+    };
+
+    let resp = await createReview(data);
+    if (resp.ok) {
+      document.getElementById("business_profile_review_list").innerHTML =
+        getReviewWLinkTemplateList(currentReviews);
+      closeDialog("rating_dialog");
+    }
+  } else {
+    showFormErrors(["review_text_error"]);
+  }
+}
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#abboardBusinessEdit">abboardBusinessEdit</a></li><li><a href="global.html#abboardCustomerEdit">abboardCustomerEdit</a></li><li><a href="global.html#activatedButton">activatedButton</a></li><li><a href="global.html#businessEditOnsubmit">businessEditOnsubmit</a></li><li><a href="global.html#changeOrderStatus">changeOrderStatus</a></li><li><a href="global.html#changeReviewFilterBusinessProfile">changeReviewFilterBusinessProfile</a></li><li><a href="global.html#changeReviewFilterCustomerProfile">changeReviewFilterCustomerProfile</a></li><li><a href="global.html#changeReviewFilterProfile">changeReviewFilterProfile</a></li><li><a href="global.html#changeReviewFilterSingleOffer">changeReviewFilterSingleOffer</a></li><li><a href="global.html#checkAuth">checkAuth</a></li><li><a href="global.html#checkAuthLogin">checkAuthLogin</a></li><li><a href="global.html#currentBusinessOfferListFilter">currentBusinessOfferListFilter</a></li><li><a href="global.html#currentBusinessUser">currentBusinessUser</a></li><li><a href="global.html#currentCustomerUser">currentCustomerUser</a></li><li><a href="global.html#currentOfferBusinessProfileFilter">currentOfferBusinessProfileFilter</a></li><li><a href="global.html#currentOfferCount">currentOfferCount</a></li><li><a href="global.html#currentOfferListFilter">currentOfferListFilter</a></li><li><a href="global.html#currentOpenedDetail">currentOpenedDetail</a></li><li><a href="global.html#currentOrdering">currentOrdering</a></li><li><a href="global.html#currentOrders">currentOrders</a></li><li><a href="global.html#currentSingleOfferUser">currentSingleOfferUser</a></li><li><a href="global.html#currentmaxDeliveryTime">currentmaxDeliveryTime</a></li><li><a href="global.html#customerEditOnsubmit">customerEditOnsubmit</a></li><li><a href="global.html#getBaseInfo">getBaseInfo</a></li><li><a href="global.html#getBusinessDialogFormTemplate">getBusinessDialogFormTemplate</a></li><li><a href="global.html#getBusinessDialogTemplate">getBusinessDialogTemplate</a></li><li><a href="global.html#getBusinessOfferTemplateList">getBusinessOfferTemplateList</a></li><li><a href="global.html#getBusinessOrderTemplate">getBusinessOrderTemplate</a></li><li><a href="global.html#getBusinessOrderTemplateList">getBusinessOrderTemplateList</a></li><li><a href="global.html#getBusinessProfileDataTmplate">getBusinessProfileDataTmplate</a></li><li><a href="global.html#getBusinessProfilePageTemplate">getBusinessProfilePageTemplate</a></li><li><a href="global.html#getBusinessProfileTemplate">getBusinessProfileTemplate</a></li><li><a href="global.html#getCustomerDetailTemplate">getCustomerDetailTemplate</a></li><li><a href="global.html#getCustomerDialogFormTemplate">getCustomerDialogFormTemplate</a></li><li><a href="global.html#getCustomerDialogTemplate">getCustomerDialogTemplate</a></li><li><a href="global.html#getCustomerOrderTemplate">getCustomerOrderTemplate</a></li><li><a href="global.html#getCustomerOrderTemplateList">getCustomerOrderTemplateList</a></li><li><a href="global.html#getCustomerProfilePageTemplate">getCustomerProfilePageTemplate</a></li><li><a href="global.html#getCustomerProfileTemplate">getCustomerProfileTemplate</a></li><li><a href="global.html#getCustomerReviewDialogWrapperTemplate">getCustomerReviewDialogWrapperTemplate</a></li><li><a href="global.html#getFeatureListTemplate">getFeatureListTemplate</a></li><li><a href="global.html#getFullProfileData">getFullProfileData</a></li><li><a href="global.html#getGreetingBoxTemplate">getGreetingBoxTemplate</a></li><li><a href="global.html#getOrderBtnTemplate">getOrderBtnTemplate</a></li><li><a href="global.html#getOrderFeatureListTemplate">getOrderFeatureListTemplate</a></li><li><a href="global.html#getOrderRevisionTemplate">getOrderRevisionTemplate</a></li><li><a href="global.html#getRevisionTemplate">getRevisionTemplate</a></li><li><a href="global.html#getSendOrderDialogContentTemplate">getSendOrderDialogContentTemplate</a></li><li><a href="global.html#getShowOrderDialogContentTemplate">getShowOrderDialogContentTemplate</a></li><li><a href="global.html#getSingleOfferDetailTemplate">getSingleOfferDetailTemplate</a></li><li><a href="global.html#getsingleOfferHeaderTemplate">getsingleOfferHeaderTemplate</a></li><li><a href="global.html#goToOfferPage">goToOfferPage</a></li><li><a href="global.html#guestLogin">guestLogin</a></li><li><a href="global.html#indexInit">indexInit</a></li><li><a href="global.html#init">init</a></li><li><a href="global.html#initBProfile">initBProfile</a></li><li><a href="global.html#initCProfile">initCProfile</a></li><li><a href="global.html#loadBusinessUser">loadBusinessUser</a></li><li><a href="global.html#loadCustomerUser">loadCustomerUser</a></li><li><a href="global.html#loadRenderBusinessBaseInfo">loadRenderBusinessBaseInfo</a></li><li><a href="global.html#loadRenderBusinessReviews">loadRenderBusinessReviews</a></li><li><a href="global.html#loadRenderCustomerReviews">loadRenderCustomerReviews</a></li><li><a href="global.html#loadRenderOffers">loadRenderOffers</a></li><li><a href="global.html#loadRenderSingleOffer">loadRenderSingleOffer</a></li><li><a href="global.html#loadRenderSingleOfferReviews">loadRenderSingleOfferReviews</a></li><li><a href="global.html#loadSingleOfferUser">loadSingleOfferUser</a></li><li><a href="global.html#logInSubmit">logInSubmit</a></li><li><a href="global.html#offerListAbboardDeliveryTime">offerListAbboardDeliveryTime</a></li><li><a href="global.html#offerListAbboardOrdering">offerListAbboardOrdering</a></li><li><a href="global.html#offerListApplyDeliveryTimeFilter">offerListApplyDeliveryTimeFilter</a></li><li><a href="global.html#offerListDeactivateAllRadio">offerListDeactivateAllRadio</a></li><li><a href="global.html#offerListInit">offerListInit</a></li><li><a href="global.html#offerPageLoaded">offerPageLoaded</a></li><li><a href="global.html#onSubmitReviewBusinessProfile">onSubmitReviewBusinessProfile</a></li><li><a href="global.html#onSubmitReviewSingleOffer">onSubmitReviewSingleOffer</a></li><li><a href="global.html#redirectToOfferListWSearch">redirectToOfferListWSearch</a></li><li><a href="global.html#registerSubmit">registerSubmit</a></li><li><a href="global.html#renderBaseInfo">renderBaseInfo</a></li><li><a href="global.html#renderOfferList">renderOfferList</a></li><li><a href="global.html#renderPage">renderPage</a></li><li><a href="global.html#renderSingleOfferDetail">renderSingleOfferDetail</a></li><li><a href="global.html#setGreetingsSection">setGreetingsSection</a></li><li><a href="global.html#singleOfferInit">singleOfferInit</a></li><li><a href="global.html#singleOfferOrderCreate">singleOfferOrderCreate</a></li><li><a href="global.html#updateBusinessProfile">updateBusinessProfile</a></li><li><a href="global.html#updateCustomerProfile">updateCustomerProfile</a></li><li><a href="global.html#updateOfferListFilter">updateOfferListFilter</a></li><li><a href="global.html#updateOfferListFilterMaxDeliveryTime">updateOfferListFilterMaxDeliveryTime</a></li><li><a href="global.html#updateOfferListFilterSearch">updateOfferListFilterSearch</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Mon Feb 03 2025 12:15:56 GMT+0100 (Mitteleuropäische Normalzeit)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

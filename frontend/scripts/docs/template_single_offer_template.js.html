@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: template/single_offer_template.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: template/single_offer_template.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * Generates the single offer header template.
+ * @function getsingleOfferHeaderTemplate
+ * @returns {string} The HTML string for the single offer header.
+ */
+function getsingleOfferHeaderTemplate() {
+  if (!currentSingleOfferUser) {
+    return `&lt;div>Es ist ein Fehler aufgetreten&lt;/div>`;
+  }
+  return `        &lt;div class="d_flex_cc_gl f_d_r_resp_c">
+                        &lt;img class="profile_img_l c_pointer" onclick="redirectToCustomerProfile(${
+                          currentSingleOfferUser.user
+                        })" src="${getPersonImgPath(
+    currentSingleOfferUser.file
+  )}" alt="Profilbild">
+                        &lt;div class="d_flex_cs_gm f_d_c ">
+                            &lt;div class="d_flex_cs_gm f_d_r_resp_c">
+                                &lt;h3 class="link c_black" onclick="redirectToCustomerProfile(${
+                                  currentSingleOfferUser.user
+                                })">${currentSingleOfferUser.first_name} ${
+    currentSingleOfferUser.last_name
+  }&lt;/h3>
+                                &lt;p class="font_sec_color">
+                                    @${currentSingleOfferUser.username}
+                                &lt;/p>
+                            &lt;/div>
+                            &lt;div class="offer_detail_review">
+                                &lt;img src="./assets/icons/kid_star_green.svg" alt="">
+                                &lt;p class="font_prime_color">${meanValueReviews()}&lt;/p>
+                                &lt;p>(${currentReviews.length})&lt;/p>
+                            &lt;/div>
+                            &lt;p>${currentOfferCount} Bestellung(en) in der Warteschlange&lt;/p>
+                        &lt;/div>
+                    &lt;/div>
+                    
+                    &lt;h3>${currentSingleOffer.title}&lt;/h3>
+                    &lt;p>${currentSingleOffer.description}&lt;/p>`;
+}
+
+/**
+ * Generates the single offer detail template.
+ * @function getSingleOfferDetailTemplate
+ * @returns {string} The HTML string for the single offer detail.
+ */
+function getSingleOfferDetailTemplate() {
+  if (!currentOpenedDetail) {
+    return `&lt;div>Es ist ein Fehler aufgetreten&lt;/div>`;
+  }
+  let img = currentSingleOffer.image
+    ? `&lt;img class="offer_detail_img" src="${getOfferImgPath(
+        currentSingleOffer.image
+      )}" alt="Angebotsbild">`
+    : "";
+
+  return `${img}
+            &lt;h3 class="font_prime_color">${currentOpenedDetail.price} €&lt;/h3>
+            &lt;h3>${currentOpenedDetail.title}&lt;/h3>
+            &lt;p class="d_flex_cc_gm">
+                &lt;img src="./assets/icons/schedule.svg" alt="Lieferzeit Icon" class="icon">
+                ${currentOpenedDetail.delivery_time_in_days} Tag(e) Lieferzeit
+            &lt;/p>
+            &lt;p class="d_flex_cc_gm">
+                &lt;img src="./assets/icons/autorenew.svg" alt="Revisionen Icon" class="icon">
+                ${getRevisionTemplate()}
+            &lt;/p>
+            &lt;ul class="feature_list">
+                ${getFeatureListTemplate()}
+            &lt;/ul>
+            ${getOrderBtnTemplate()}`;
+}
+
+/**
+ * Generates the order button template based on the user type.
+ * @function getOrderBtnTemplate
+ * @returns {string} The HTML string for the order button.
+ */
+function getOrderBtnTemplate() {
+  if (currentUser.type == "business") {
+    return `&lt;div >
+                    &lt;button onclick="openDialog('offer_orderbtn_error')" class="std_btn std_btn_disabled btn_prime pad_s">Bestellen&lt;/button>
+                    &lt;p id="offer_orderbtn_error" class="font_error_color d_none">dies ist nur als Kunde möglich&lt;/p>
+                &lt;/div>`;
+  } else {
+    return `&lt;button onclick="openDialog('order_dialog')" class="std_btn btn_prime pad_s">Bestellen&lt;/button>`;
+  }
+}
+
+/**
+ * Generates the feature list template.
+ * @function getFeatureListTemplate
+ * @returns {string} The HTML string for the feature list.
+ */
+function getFeatureListTemplate() {
+  if (!Array.isArray(currentOpenedDetail.features)) {
+    return `&lt;li>Es ist ein Problem aufgetreten&lt;/li>`;
+  }
+  if (currentOpenedDetail.features.length === 0) {
+    return `&lt;li>Keine Features verfügbar.&lt;/li>`;
+  }
+  let featureList = "";
+
+  currentOpenedDetail.features.forEach((feature) => {
+    featureList += `&lt;li>${feature}&lt;/li>`;
+  });
+  return featureList;
+}
+
+/**
+ * Generates the revision template based on the number of revisions.
+ * @function getRevisionTemplate
+ * @returns {string} The HTML string for the revision information.
+ */
+function getRevisionTemplate() {
+  if (currentOpenedDetail.revisions == -1) {
+    return "Unbegrenzte Revisionen";
+  } else if (currentOpenedDetail.revisions == 1) {
+    return currentOpenedDetail.revisions + " Revision";
+  } else {
+    return currentOpenedDetail.revisions + " Revisionen";
+  }
+}
+
+/**
+ * Generates the order dialog content template.
+ * @function getShowOrderDialogContentTemplate
+ * @returns {string} The HTML string for the order dialog content.
+ */
+function getShowOrderDialogContentTemplate() {
+  if (!currentOpenedDetail) {
+    return `&lt;div>Es ist ein Fehler aufgetreten&lt;/div>`;
+  }
+  return `
+    &lt;h2 class="font_prime_color">Bestellung bestätigen&lt;/h2>
+
+                    &lt;h3>${currentOpenedDetail.title}&lt;/h3>
+
+                    &lt;div class="d_flex_cs_gm f_d_c">
+                        &lt;p class="d_flex_cc_gm">
+                            &lt;img src="./assets/icons/box.svg" alt="Paket Icon" class="icon">
+                            ${currentOpenedDetail.offer_type} Paket
+                        &lt;/p>
+                        &lt;p class="d_flex_cc_gm">
+                            &lt;img src="./assets/icons/schedule.svg" alt="Lieferzeit Icon" class="icon">
+                            ${
+                              currentOpenedDetail.delivery_time_in_days
+                            } Tag(e) Lieferzeit
+                        &lt;/p>
+                        &lt;p class="d_flex_cc_gm">
+                            &lt;img src="./assets/icons/autorenew.svg" alt="Revisionen Icon" class="icon">
+                            ${getRevisionTemplate()}
+                        &lt;/p>
+
+                        &lt;ul class="feature_list">
+                            ${getFeatureListTemplate()}
+                        &lt;/ul>
+                    &lt;/div>
+
+                    &lt;p>
+                        &lt;strong>Gesamtpreis:&lt;/strong>
+                        &lt;strong class="font_prime_color ">${
+                          currentOpenedDetail.price
+                        } €&lt;/strong>
+                    &lt;/p>
+                    &lt;div class="d_flex_cs_gl">
+                        &lt;button onclick="singleOfferOrderCreate()" class="std_btn btn_prime pad_s">Kostenpflichtig bestellen&lt;/button>
+                        &lt;button onclick="closeDialog('order_dialog')"
+                            class="std_btn btn_secondary pad_s">Abbrechen&lt;/button>
+                    &lt;/div>`;
+}
+
+/**
+ * Generates the send order dialog content template.
+ * @function getSendOrderDialogContentTemplate
+ * @returns {string} The HTML string for the send order dialog content.
+ */
+function getSendOrderDialogContentTemplate() {
+  return `&lt;div class="d_flex_cc_gxl f_d_c w_full">
+                &lt;img src="./assets/icons/check_circle.svg" alt="" srcset="">
+                &lt;h2 class="text_a_c">Erfolgreich Bestellung aufgegeben&lt;/h2>
+                &lt;div class="d_flex_cc_gm f_d_r_resp_c w_full">
+                    &lt;button onclick="redirectToOwnProfile()" class="std_btn btn_prime pad_s">Status checken&lt;/button>
+                    &lt;button onclick="closeDialog('order_dialog')" class="std_btn btn_prime pad_s">Weiter shoppen&lt;/button>
+                &lt;/div>
+            &lt;/div>`;
+}
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#abboardBusinessEdit">abboardBusinessEdit</a></li><li><a href="global.html#abboardCustomerEdit">abboardCustomerEdit</a></li><li><a href="global.html#activatedButton">activatedButton</a></li><li><a href="global.html#businessEditOnsubmit">businessEditOnsubmit</a></li><li><a href="global.html#changeOrderStatus">changeOrderStatus</a></li><li><a href="global.html#changeReviewFilterBusinessProfile">changeReviewFilterBusinessProfile</a></li><li><a href="global.html#changeReviewFilterCustomerProfile">changeReviewFilterCustomerProfile</a></li><li><a href="global.html#changeReviewFilterProfile">changeReviewFilterProfile</a></li><li><a href="global.html#changeReviewFilterSingleOffer">changeReviewFilterSingleOffer</a></li><li><a href="global.html#checkAuth">checkAuth</a></li><li><a href="global.html#checkAuthLogin">checkAuthLogin</a></li><li><a href="global.html#currentBusinessOfferListFilter">currentBusinessOfferListFilter</a></li><li><a href="global.html#currentBusinessUser">currentBusinessUser</a></li><li><a href="global.html#currentCustomerUser">currentCustomerUser</a></li><li><a href="global.html#currentOfferBusinessProfileFilter">currentOfferBusinessProfileFilter</a></li><li><a href="global.html#currentOfferCount">currentOfferCount</a></li><li><a href="global.html#currentOfferListFilter">currentOfferListFilter</a></li><li><a href="global.html#currentOpenedDetail">currentOpenedDetail</a></li><li><a href="global.html#currentOrdering">currentOrdering</a></li><li><a href="global.html#currentOrders">currentOrders</a></li><li><a href="global.html#currentSingleOfferUser">currentSingleOfferUser</a></li><li><a href="global.html#currentmaxDeliveryTime">currentmaxDeliveryTime</a></li><li><a href="global.html#customerEditOnsubmit">customerEditOnsubmit</a></li><li><a href="global.html#getBaseInfo">getBaseInfo</a></li><li><a href="global.html#getBusinessDialogFormTemplate">getBusinessDialogFormTemplate</a></li><li><a href="global.html#getBusinessDialogTemplate">getBusinessDialogTemplate</a></li><li><a href="global.html#getBusinessOfferTemplateList">getBusinessOfferTemplateList</a></li><li><a href="global.html#getBusinessOrderTemplate">getBusinessOrderTemplate</a></li><li><a href="global.html#getBusinessOrderTemplateList">getBusinessOrderTemplateList</a></li><li><a href="global.html#getBusinessProfileDataTmplate">getBusinessProfileDataTmplate</a></li><li><a href="global.html#getBusinessProfilePageTemplate">getBusinessProfilePageTemplate</a></li><li><a href="global.html#getBusinessProfileTemplate">getBusinessProfileTemplate</a></li><li><a href="global.html#getCustomerDetailTemplate">getCustomerDetailTemplate</a></li><li><a href="global.html#getCustomerDialogFormTemplate">getCustomerDialogFormTemplate</a></li><li><a href="global.html#getCustomerDialogTemplate">getCustomerDialogTemplate</a></li><li><a href="global.html#getCustomerOrderTemplate">getCustomerOrderTemplate</a></li><li><a href="global.html#getCustomerOrderTemplateList">getCustomerOrderTemplateList</a></li><li><a href="global.html#getCustomerProfilePageTemplate">getCustomerProfilePageTemplate</a></li><li><a href="global.html#getCustomerProfileTemplate">getCustomerProfileTemplate</a></li><li><a href="global.html#getCustomerReviewDialogWrapperTemplate">getCustomerReviewDialogWrapperTemplate</a></li><li><a href="global.html#getFeatureListTemplate">getFeatureListTemplate</a></li><li><a href="global.html#getFullProfileData">getFullProfileData</a></li><li><a href="global.html#getGreetingBoxTemplate">getGreetingBoxTemplate</a></li><li><a href="global.html#getOrderBtnTemplate">getOrderBtnTemplate</a></li><li><a href="global.html#getOrderFeatureListTemplate">getOrderFeatureListTemplate</a></li><li><a href="global.html#getOrderRevisionTemplate">getOrderRevisionTemplate</a></li><li><a href="global.html#getRevisionTemplate">getRevisionTemplate</a></li><li><a href="global.html#getSendOrderDialogContentTemplate">getSendOrderDialogContentTemplate</a></li><li><a href="global.html#getShowOrderDialogContentTemplate">getShowOrderDialogContentTemplate</a></li><li><a href="global.html#getSingleOfferDetailTemplate">getSingleOfferDetailTemplate</a></li><li><a href="global.html#getsingleOfferHeaderTemplate">getsingleOfferHeaderTemplate</a></li><li><a href="global.html#goToOfferPage">goToOfferPage</a></li><li><a href="global.html#guestLogin">guestLogin</a></li><li><a href="global.html#indexInit">indexInit</a></li><li><a href="global.html#init">init</a></li><li><a href="global.html#initBProfile">initBProfile</a></li><li><a href="global.html#initCProfile">initCProfile</a></li><li><a href="global.html#loadBusinessUser">loadBusinessUser</a></li><li><a href="global.html#loadCustomerUser">loadCustomerUser</a></li><li><a href="global.html#loadRenderBusinessBaseInfo">loadRenderBusinessBaseInfo</a></li><li><a href="global.html#loadRenderBusinessReviews">loadRenderBusinessReviews</a></li><li><a href="global.html#loadRenderCustomerReviews">loadRenderCustomerReviews</a></li><li><a href="global.html#loadRenderOffers">loadRenderOffers</a></li><li><a href="global.html#loadRenderSingleOffer">loadRenderSingleOffer</a></li><li><a href="global.html#loadRenderSingleOfferReviews">loadRenderSingleOfferReviews</a></li><li><a href="global.html#loadSingleOfferUser">loadSingleOfferUser</a></li><li><a href="global.html#logInSubmit">logInSubmit</a></li><li><a href="global.html#offerListAbboardDeliveryTime">offerListAbboardDeliveryTime</a></li><li><a href="global.html#offerListAbboardOrdering">offerListAbboardOrdering</a></li><li><a href="global.html#offerListApplyDeliveryTimeFilter">offerListApplyDeliveryTimeFilter</a></li><li><a href="global.html#offerListDeactivateAllRadio">offerListDeactivateAllRadio</a></li><li><a href="global.html#offerListInit">offerListInit</a></li><li><a href="global.html#offerPageLoaded">offerPageLoaded</a></li><li><a href="global.html#onSubmitReviewBusinessProfile">onSubmitReviewBusinessProfile</a></li><li><a href="global.html#onSubmitReviewSingleOffer">onSubmitReviewSingleOffer</a></li><li><a href="global.html#redirectToOfferListWSearch">redirectToOfferListWSearch</a></li><li><a href="global.html#registerSubmit">registerSubmit</a></li><li><a href="global.html#renderBaseInfo">renderBaseInfo</a></li><li><a href="global.html#renderOfferList">renderOfferList</a></li><li><a href="global.html#renderPage">renderPage</a></li><li><a href="global.html#renderSingleOfferDetail">renderSingleOfferDetail</a></li><li><a href="global.html#setGreetingsSection">setGreetingsSection</a></li><li><a href="global.html#singleOfferInit">singleOfferInit</a></li><li><a href="global.html#singleOfferOrderCreate">singleOfferOrderCreate</a></li><li><a href="global.html#updateBusinessProfile">updateBusinessProfile</a></li><li><a href="global.html#updateCustomerProfile">updateCustomerProfile</a></li><li><a href="global.html#updateOfferListFilter">updateOfferListFilter</a></li><li><a href="global.html#updateOfferListFilterMaxDeliveryTime">updateOfferListFilterMaxDeliveryTime</a></li><li><a href="global.html#updateOfferListFilterSearch">updateOfferListFilterSearch</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Mon Feb 03 2025 12:15:56 GMT+0100 (Mitteleuropäische Normalzeit)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>
