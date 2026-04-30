@@ -9,6 +9,17 @@ from rest_framework.views import APIView
 from .serializers import LoginSerializer, RegistrationSerializer
 
 
+def _token_payload(user):
+    """Build the auth response body shared by registration and login."""
+    token, _ = Token.objects.get_or_create(user=user)
+    return {
+        "token": token.key,
+        "username": user.username,
+        "email": user.email,
+        "user_id": user.id,
+    }
+
+
 class RegistrationView(APIView):
     """POST /api/registration/ — create a user, return a token."""
 
@@ -18,14 +29,7 @@ class RegistrationView(APIView):
         serializer = RegistrationSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
-        token, _ = Token.objects.get_or_create(user=user)
-        body = {
-            "token": token.key,
-            "username": user.username,
-            "email": user.email,
-            "user_id": user.id,
-        }
-        return Response(body, status=status.HTTP_201_CREATED)
+        return Response(_token_payload(user), status=status.HTTP_201_CREATED)
 
 
 class LoginView(APIView):
@@ -45,11 +49,4 @@ class LoginView(APIView):
                 {"detail": "Invalid credentials."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        token, _ = Token.objects.get_or_create(user=user)
-        body = {
-            "token": token.key,
-            "username": user.username,
-            "email": user.email,
-            "user_id": user.id,
-        }
-        return Response(body, status=status.HTTP_200_OK)
+        return Response(_token_payload(user), status=status.HTTP_200_OK)
