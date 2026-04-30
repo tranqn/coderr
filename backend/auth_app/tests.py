@@ -74,3 +74,36 @@ class RegistrationEndpointTests(APITestCase):
             self.url, self._payload(repeated_password="different-pw"), format="json"
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+
+class LoginEndpointTests(APITestCase):
+    """POST /api/login/ — happy path + invalid credentials."""
+
+    url = "/api/login/"
+
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username="loginuser", email="login@example.com", password="strong-pw-99"
+        )
+
+    def test_login_happy_path_returns_token(self):
+        response = self.client.post(
+            self.url,
+            {"username": "loginuser", "password": "strong-pw-99"},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn("token", response.data)
+        self.assertEqual(response.data["user_id"], self.user.id)
+
+    def test_login_rejects_wrong_password(self):
+        response = self.client.post(
+            self.url,
+            {"username": "loginuser", "password": "wrong-pw"},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_login_requires_username_and_password(self):
+        response = self.client.post(self.url, {"username": "loginuser"}, format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
