@@ -45,3 +45,10 @@ class RegistrationSerializer(serializers.ModelSerializer):
         profile.type = profile_type
         profile.save(update_fields=["type"])
         return user
+
+
+class LoginSerializer(serializers.Serializer):
+    """Bare-bones login payload."""
+
+    username = serializers.CharField()
+    password = serializers.CharField(write_only=True)
