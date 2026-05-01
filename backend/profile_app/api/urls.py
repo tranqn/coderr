@@ -1,3 +1,8 @@
+"""URL routes for profile_app."""
 from django.urls import path
 
-urlpatterns = []
+from .views import ProfileDetailView
+
+urlpatterns = [
+    path("profile/<int:pk>/", ProfileDetailView.as_view(), name="profile-detail"),
+]
