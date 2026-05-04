@@ -54,3 +54,50 @@ class ProfileDetailGetTests(APITestCase):
         self.client.force_authenticate(user=viewer)
         response = self.client.get(self.url_for(999_999))
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+
+class ProfileDetailPatchTests(APITestCase):
+    """PATCH /api/profile/{pk}/ — owner only, partial update."""
+
+    url_for = staticmethod(lambda pk: f"/api/profile/{pk}/")
+
+    def test_owner_can_patch_own_profile(self):
+        owner = make_user("owner")
+        self.client.force_authenticate(user=owner)
+        response = self.client.patch(
+            self.url_for(owner.id),
+            {"first_name": "Owen", "location": "Hamburg"},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        owner.profile.refresh_from_db()
+        self.assertEqual(owner.profile.first_name, "Owen")
+        self.assertEqual(owner.profile.location, "Hamburg")
+
+    def test_owner_can_update_email_via_profile_patch(self):
+        owner = make_user("owner")
+        self.client.force_authenticate(user=owner)
+        response = self.client.patch(
+            self.url_for(owner.id),
+            {"email": "owen-new@example.com"},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        owner.refresh_from_db()
+        self.assertEqual(owner.email, "owen-new@example.com")
+
+    def test_non_owner_cannot_patch(self):
+        owner = make_user("owner")
+        intruder = make_user("intruder")
+        self.client.force_authenticate(user=intruder)
+        response = self.client.patch(
+            self.url_for(owner.id), {"first_name": "Hacker"}, format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_anonymous_patch_rejected(self):
+        owner = make_user("owner")
+        response = self.client.patch(
+            self.url_for(owner.id), {"first_name": "Hacker"}, format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
