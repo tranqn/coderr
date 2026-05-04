@@ -1,13 +1,18 @@
 """Profile detail and list views."""
 from django.http import Http404
 from rest_framework import status
+from rest_framework.generics import ListAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from ..models import Profile
 from .permissions import IsProfileOwner
-from .serializers import ProfileSerializer
+from .serializers import (
+    BusinessProfileListSerializer,
+    CustomerProfileListSerializer,
+    ProfileSerializer,
+)
 
 
 class ProfileDetailView(APIView):
@@ -37,3 +42,25 @@ class ProfileDetailView(APIView):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class BusinessProfileListView(ListAPIView):
+    """GET /api/profiles/business/ — all business profiles."""
+
+    serializer_class = BusinessProfileListSerializer
+    permission_classes = [IsAuthenticated]
+    pagination_class = None
+
+    def get_queryset(self):
+        return Profile.objects.filter(type="business").select_related("user")
+
+
+class CustomerProfileListView(ListAPIView):
+    """GET /api/profiles/customer/ — all customer profiles."""
+
+    serializer_class = CustomerProfileListSerializer
+    permission_classes = [IsAuthenticated]
+    pagination_class = None
+
+    def get_queryset(self):
+        return Profile.objects.filter(type="customer").select_related("user")

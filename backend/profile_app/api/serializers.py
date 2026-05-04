@@ -52,3 +52,38 @@ class ProfileSerializer(serializers.ModelSerializer):
             setattr(instance, attr, value)
         instance.save()
         return instance
+
+
+class BusinessProfileListSerializer(serializers.ModelSerializer):
+    """Item serializer for /api/profiles/business/."""
+
+    user = serializers.IntegerField(source="user.id", read_only=True)
+    username = serializers.CharField(source="user.username", read_only=True)
+
+    class Meta:
+        model = Profile
+        fields = [
+            "user", "username", "first_name", "last_name", "file",
+            "location", "tel", "description", "working_hours", "type",
+        ]
+
+    def to_representation(self, instance):
+        return _empty_if_none(super().to_representation(instance))
+
+
+class CustomerProfileListSerializer(serializers.ModelSerializer):
+    """Item serializer for /api/profiles/customer/."""
+
+    user = serializers.IntegerField(source="user.id", read_only=True)
+    username = serializers.CharField(source="user.username", read_only=True)
+    uploaded_at = serializers.DateTimeField(source="created_at", read_only=True)
+
+    class Meta:
+        model = Profile
+        fields = [
+            "user", "username", "first_name", "last_name",
+            "file", "uploaded_at", "type",
+        ]
+
+    def to_representation(self, instance):
+        return _empty_if_none(super().to_representation(instance))
