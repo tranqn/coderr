@@ -101,3 +101,58 @@ class ProfileDetailPatchTests(APITestCase):
             self.url_for(owner.id), {"first_name": "Hacker"}, format="json"
         )
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+
+class BusinessProfileListTests(APITestCase):
+    """GET /api/profiles/business/ — list of business profiles."""
+
+    url = "/api/profiles/business/"
+
+    def test_list_excludes_customer_profiles(self):
+        viewer = make_user("viewer")
+        make_user("biz1", type="business", first_name="Bea")
+        make_user("biz2", type="business")
+        make_user("cust1")
+        self.client.force_authenticate(user=viewer)
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        usernames = {row["username"] for row in response.data}
+        self.assertEqual(usernames, {"biz1", "biz2"})
+
+    def test_list_uses_empty_strings_for_text_fields(self):
+        viewer = make_user("viewer")
+        make_user("biz1", type="business")
+        self.client.force_authenticate(user=viewer)
+        response = self.client.get(self.url)
+        row = next(r for r in response.data if r["username"] == "biz1")
+        self.assertEqual(row["first_name"], "")
+        self.assertEqual(row["location"], "")
+
+    def test_list_requires_authentication(self):
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+
+class CustomerProfileListTests(APITestCase):
+    """GET /api/profiles/customer/ — list of customer profiles."""
+
+    url = "/api/profiles/customer/"
+
+    def test_list_excludes_business_profiles(self):
+        viewer = make_user("viewer")
+        make_user("cust1")
+        make_user("cust2")
+        make_user("biz1", type="business")
+        self.client.force_authenticate(user=viewer)
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        usernames = {row["username"] for row in response.data}
+        self.assertEqual(usernames, {"viewer", "cust1", "cust2"})
+
+    def test_list_uses_uploaded_at_alias(self):
+        viewer = make_user("viewer")
+        self.client.force_authenticate(user=viewer)
+        response = self.client.get(self.url)
+        for row in response.data:
+            self.assertIn("uploaded_at", row)
+            self.assertNotIn("created_at", row)
