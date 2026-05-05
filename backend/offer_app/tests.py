@@ -103,3 +103,31 @@ class OfferDetailItemTests(APITestCase):
         detail = offer.details.first()
         response = self.client.get(f"/api/offerdetails/{detail.id}/")
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+
+class OfferRetrieveTests(APITestCase):
+    """GET /api/offers/{id}/."""
+
+    def test_get_returns_offer_with_detail_links_and_aggregates(self):
+        owner = make_business()
+        offer = make_offer_with_details(owner)
+        viewer = make_user("viewer")
+        self.client.force_authenticate(user=viewer)
+        response = self.client.get(f"/api/offers/{offer.id}/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["id"], offer.id)
+        self.assertEqual(response.data["title"], "Logo design")
+        self.assertEqual(len(response.data["details"]), 3)
+        # Each detail must be a {id, url} link, not full payload.
+        link = response.data["details"][0]
+        self.assertIn("id", link)
+        self.assertIn("url", link)
+        self.assertNotIn("price", link)
+        self.assertEqual(str(response.data["min_price"]), "50.00")
+        self.assertEqual(response.data["min_delivery_time"], 3)
+
+    def test_get_returns_404_for_missing_offer(self):
+        viewer = make_user("viewer")
+        self.client.force_authenticate(user=viewer)
+        response = self.client.get("/api/offers/999999/")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
