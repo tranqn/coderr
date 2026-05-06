@@ -3,6 +3,8 @@ from rest_framework import serializers
 
 from ..models import Offer, OfferDetail
 
+REQUIRED_OFFER_TYPES = {"basic", "standard", "premium"}
+
 
 class OfferDetailFullSerializer(serializers.ModelSerializer):
     """Full nested representation of an OfferDetail."""
@@ -91,3 +93,50 @@ class OfferRetrieveSerializer(serializers.ModelSerializer):
             obj.details.order_by("delivery_time_in_days")
             .values_list("delivery_time_in_days", flat=True).first()
         )
+
+
+def _save_details(offer, items):
+    """Bulk-create OfferDetail rows for a freshly-created offer."""
+    OfferDetail.objects.bulk_create(
+        [OfferDetail(offer=offer, **item) for item in items]
+    )
+
+
+class OfferCreateSerializer(serializers.ModelSerializer):
+    """POST payload: requires exactly three details with all offer_types."""
+
+    details = OfferDetailFullSerializer(many=True)
+
+    class Meta:
+        model = Offer
+        fields = ["id", "title", "image", "description", "details"]
+        read_only_fields = ["id"]
+
+    def validate_details(self, value):
+        if len(value) != 3:
+            raise serializers.ValidationError(
+                "An offer must contain exactly 3 details."
+            )
+        types = {item.get("offer_type") for item in value}
+        if types != REQUIRED_OFFER_TYPES:
+            raise serializers.ValidationError(
+                "details must include offer_type basic, standard, and premium."
+            )
+        return value
+
+    def create(self, validated_data):
+        details = validated_data.pop("details")
+        offer = Offer.objects.create(**validated_data)
+        _save_details(offer, details)
+        return offer
+
+    def to_representation(self, instance):
+        return {
+            "id": instance.id,
+            "title": instance.title,
+            "image": instance.image.url if instance.image else None,
+            "description": instance.description,
+            "details": OfferDetailFullSerializer(
+                instance.details.all(), many=True
+            ).data,
+        }
