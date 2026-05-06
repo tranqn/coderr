@@ -162,7 +162,7 @@ class OfferListTests(APITestCase):
         response = self.client.get(self.url)
         item = response.data["results"][0]
         self.assertEqual(len(item["details"]), 3)
-        self.assertEqual(str(item["min_price"]), "50.00")
+        self.assertEqual(Decimal(str(item["min_price"])), Decimal("50.00"))
         self.assertEqual(item["min_delivery_time"], 3)
         self.assertIn("user_details", item)
         self.assertIn("username", item["user_details"])
