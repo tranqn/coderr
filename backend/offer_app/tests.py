@@ -131,3 +131,78 @@ class OfferRetrieveTests(APITestCase):
         self.client.force_authenticate(user=viewer)
         response = self.client.get("/api/offers/999999/")
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+
+class OfferListTests(APITestCase):
+    """GET /api/offers/."""
+
+    url = "/api/offers/"
+
+    def _seed_offers(self):
+        biz_a = make_business("biz_a")
+        biz_b = make_business("biz_b")
+        make_offer_with_details(biz_a, title="Logo design")
+        make_offer_with_details(biz_b, title="Website redesign")
+        return biz_a, biz_b
+
+    def test_list_returns_paginated_shape(self):
+        viewer = make_user("viewer")
+        self._seed_offers()
+        self.client.force_authenticate(user=viewer)
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        for key in ("count", "next", "previous", "results"):
+            self.assertIn(key, response.data)
+        self.assertEqual(response.data["count"], 2)
+
+    def test_list_results_include_details_and_aggregates(self):
+        viewer = make_user("viewer")
+        self._seed_offers()
+        self.client.force_authenticate(user=viewer)
+        response = self.client.get(self.url)
+        item = response.data["results"][0]
+        self.assertEqual(len(item["details"]), 3)
+        self.assertEqual(str(item["min_price"]), "50.00")
+        self.assertEqual(item["min_delivery_time"], 3)
+        self.assertIn("user_details", item)
+        self.assertIn("username", item["user_details"])
+
+    def test_list_filters_by_creator_id(self):
+        viewer = make_user("viewer")
+        biz_a, _ = self._seed_offers()
+        self.client.force_authenticate(user=viewer)
+        response = self.client.get(self.url, {"creator_id": biz_a.id})
+        usernames = {r["user_details"]["username"] for r in response.data["results"]}
+        self.assertEqual(usernames, {"biz_a"})
+
+    def test_list_filters_by_min_price(self):
+        viewer = make_user("viewer")
+        biz_a = make_business("biz_a")
+        cheap = make_offer_with_details(biz_a, title="Cheap")
+        cheap.details.filter(offer_type="basic").update(price=Decimal("10.00"))
+        expensive = make_offer_with_details(biz_a, title="Expensive")
+        expensive.details.update(price=Decimal("500.00"))
+        self.client.force_authenticate(user=viewer)
+        response = self.client.get(self.url, {"min_price": 100})
+        titles = {r["title"] for r in response.data["results"]}
+        self.assertEqual(titles, {"Expensive"})
+
+    def test_list_search_matches_title_and_description(self):
+        viewer = make_user("viewer")
+        self._seed_offers()
+        self.client.force_authenticate(user=viewer)
+        response = self.client.get(self.url, {"search": "Website"})
+        titles = {r["title"] for r in response.data["results"]}
+        self.assertEqual(titles, {"Website redesign"})
+
+    def test_list_ordering_by_min_price(self):
+        viewer = make_user("viewer")
+        self._seed_offers()
+        self.client.force_authenticate(user=viewer)
+        response = self.client.get(self.url, {"ordering": "min_price"})
+        prices = [r["min_price"] for r in response.data["results"]]
+        self.assertEqual(prices, sorted(prices))
+
+    def test_list_requires_authentication(self):
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
