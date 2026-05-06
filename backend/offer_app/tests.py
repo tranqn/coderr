@@ -206,3 +206,58 @@ class OfferListTests(APITestCase):
     def test_list_requires_authentication(self):
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+
+class OfferCreateTests(APITestCase):
+    """POST /api/offers/."""
+
+    url = "/api/offers/"
+
+    def _payload(self):
+        return {
+            "title": "Logo design",
+            "description": "Spec-perfect logo.",
+            "details": [
+                {"title": "Basic", "revisions": 1, "delivery_time_in_days": 3,
+                 "price": "50.00", "features": ["a"], "offer_type": "basic"},
+                {"title": "Standard", "revisions": 3, "delivery_time_in_days": 5,
+                 "price": "100.00", "features": ["a", "b"], "offer_type": "standard"},
+                {"title": "Premium", "revisions": 10, "delivery_time_in_days": 10,
+                 "price": "250.00", "features": ["a", "b", "c"], "offer_type": "premium"},
+            ],
+        }
+
+    def test_business_user_can_create_offer(self):
+        biz = make_business()
+        self.client.force_authenticate(user=biz)
+        response = self.client.post(self.url, self._payload(), format="json")
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(Offer.objects.count(), 1)
+        self.assertEqual(Offer.objects.first().details.count(), 3)
+
+    def test_customer_user_cannot_create_offer(self):
+        customer = make_user("customer")
+        self.client.force_authenticate(user=customer)
+        response = self.client.post(self.url, self._payload(), format="json")
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(Offer.objects.count(), 0)
+
+    def test_must_have_exactly_three_details(self):
+        biz = make_business()
+        self.client.force_authenticate(user=biz)
+        payload = self._payload()
+        payload["details"] = payload["details"][:2]
+        response = self.client.post(self.url, payload, format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_must_cover_all_three_offer_types(self):
+        biz = make_business()
+        self.client.force_authenticate(user=biz)
+        payload = self._payload()
+        payload["details"][2]["offer_type"] = "basic"
+        response = self.client.post(self.url, payload, format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_anonymous_post_rejected(self):
+        response = self.client.post(self.url, self._payload(), format="json")
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
