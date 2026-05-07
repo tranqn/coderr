@@ -301,3 +301,24 @@ class OfferPatchTests(APITestCase):
             f"/api/offers/{offer.id}/", {"title": "Hijacked"}, format="json"
         )
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+
+class OfferDeleteTests(APITestCase):
+    """DELETE /api/offers/{id}/."""
+
+    def test_owner_can_delete(self):
+        owner = make_business()
+        offer = make_offer_with_details(owner)
+        self.client.force_authenticate(user=owner)
+        response = self.client.delete(f"/api/offers/{offer.id}/")
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(Offer.objects.filter(id=offer.id).exists())
+
+    def test_non_owner_cannot_delete(self):
+        owner = make_business("biz_a")
+        other = make_business("biz_b")
+        offer = make_offer_with_details(owner)
+        self.client.force_authenticate(user=other)
+        response = self.client.delete(f"/api/offers/{offer.id}/")
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertTrue(Offer.objects.filter(id=offer.id).exists())
