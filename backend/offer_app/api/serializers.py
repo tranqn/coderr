@@ -140,3 +140,48 @@ class OfferCreateSerializer(serializers.ModelSerializer):
                 instance.details.all(), many=True
             ).data,
         }
+
+
+def _apply_detail_update(offer, item):
+    """Update a single detail of `offer` matched by its ``offer_type``."""
+    offer_type = item.get("offer_type")
+    detail = offer.details.filter(offer_type=offer_type).first()
+    if not detail:
+        raise serializers.ValidationError(
+            {"details": f"No detail with offer_type '{offer_type}'."}
+        )
+    for attr, value in item.items():
+        setattr(detail, attr, value)
+    detail.save()
+
+
+class OfferUpdateSerializer(serializers.ModelSerializer):
+    """PATCH payload: identifies nested details by offer_type, not id."""
+
+    details = OfferDetailFullSerializer(many=True, required=False)
+
+    class Meta:
+        model = Offer
+        fields = ["id", "title", "image", "description", "details"]
+        read_only_fields = ["id"]
+
+    def update(self, instance, validated_data):
+        details = validated_data.pop("details", None)
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+        if details:
+            for item in details:
+                _apply_detail_update(instance, item)
+        return instance
+
+    def to_representation(self, instance):
+        return {
+            "id": instance.id,
+            "title": instance.title,
+            "image": instance.image.url if instance.image else None,
+            "description": instance.description,
+            "details": OfferDetailFullSerializer(
+                instance.details.all(), many=True
+            ).data,
+        }

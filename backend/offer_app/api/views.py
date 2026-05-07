@@ -3,18 +3,20 @@ from django.db.models import Min
 from rest_framework.generics import (
     ListCreateAPIView,
     RetrieveAPIView,
+    RetrieveUpdateDestroyAPIView,
 )
 from rest_framework.permissions import IsAuthenticated
 
 from ..models import Offer, OfferDetail
 from .filters import OfferFilter
 from .pagination import OfferPagination
-from .permissions import IsBusinessUser
+from .permissions import IsBusinessUser, IsOfferOwnerOrReadOnly
 from .serializers import (
     OfferCreateSerializer,
     OfferDetailFullSerializer,
     OfferListSerializer,
     OfferRetrieveSerializer,
+    OfferUpdateSerializer,
 )
 
 
@@ -50,12 +52,17 @@ class OfferListCreateView(ListCreateAPIView):
         serializer.save(user=self.request.user)
 
 
-class OfferDetailView(RetrieveAPIView):
-    """GET /api/offers/{id}/."""
+class OfferDetailView(RetrieveUpdateDestroyAPIView):
+    """GET/PATCH/DELETE /api/offers/{id}/."""
 
     queryset = Offer.objects.select_related("user").prefetch_related("details")
-    serializer_class = OfferRetrieveSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsOfferOwnerOrReadOnly]
+    http_method_names = ["get", "patch", "delete", "head", "options"]
+
+    def get_serializer_class(self):
+        if self.request.method == "PATCH":
+            return OfferUpdateSerializer
+        return OfferRetrieveSerializer
 
 
 class OfferDetailItemView(RetrieveAPIView):
