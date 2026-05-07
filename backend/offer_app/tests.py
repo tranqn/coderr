@@ -261,3 +261,43 @@ class OfferCreateTests(APITestCase):
     def test_anonymous_post_rejected(self):
         response = self.client.post(self.url, self._payload(), format="json")
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+
+class OfferPatchTests(APITestCase):
+    """PATCH /api/offers/{id}/."""
+
+    def test_owner_can_patch_offer_title(self):
+        owner = make_business()
+        offer = make_offer_with_details(owner)
+        self.client.force_authenticate(user=owner)
+        response = self.client.patch(
+            f"/api/offers/{offer.id}/", {"title": "Updated logo"}, format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        offer.refresh_from_db()
+        self.assertEqual(offer.title, "Updated logo")
+
+    def test_owner_can_patch_detail_by_offer_type(self):
+        owner = make_business()
+        offer = make_offer_with_details(owner)
+        basic_id_before = offer.details.get(offer_type="basic").id
+        self.client.force_authenticate(user=owner)
+        response = self.client.patch(
+            f"/api/offers/{offer.id}/",
+            {"details": [{"offer_type": "basic", "price": "75.00"}]},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        basic_after = offer.details.get(offer_type="basic")
+        self.assertEqual(basic_after.id, basic_id_before)
+        self.assertEqual(str(basic_after.price), "75.00")
+
+    def test_non_owner_cannot_patch(self):
+        owner = make_business("biz_a")
+        other_biz = make_business("biz_b")
+        offer = make_offer_with_details(owner)
+        self.client.force_authenticate(user=other_biz)
+        response = self.client.patch(
+            f"/api/offers/{offer.id}/", {"title": "Hijacked"}, format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
