@@ -102,6 +102,19 @@ def _save_details(offer, items):
     )
 
 
+def _offer_write_response(instance):
+    """Shared response shape for POST and PATCH /api/offers/."""
+    return {
+        "id": instance.id,
+        "title": instance.title,
+        "image": instance.image.url if instance.image else None,
+        "description": instance.description,
+        "details": OfferDetailFullSerializer(
+            instance.details.all(), many=True
+        ).data,
+    }
+
+
 class OfferCreateSerializer(serializers.ModelSerializer):
     """POST payload: requires exactly three details with all offer_types."""
 
@@ -131,15 +144,7 @@ class OfferCreateSerializer(serializers.ModelSerializer):
         return offer
 
     def to_representation(self, instance):
-        return {
-            "id": instance.id,
-            "title": instance.title,
-            "image": instance.image.url if instance.image else None,
-            "description": instance.description,
-            "details": OfferDetailFullSerializer(
-                instance.details.all(), many=True
-            ).data,
-        }
+        return _offer_write_response(instance)
 
 
 def _apply_detail_update(offer, item):
@@ -176,12 +181,4 @@ class OfferUpdateSerializer(serializers.ModelSerializer):
         return instance
 
     def to_representation(self, instance):
-        return {
-            "id": instance.id,
-            "title": instance.title,
-            "image": instance.image.url if instance.image else None,
-            "description": instance.description,
-            "details": OfferDetailFullSerializer(
-                instance.details.all(), many=True
-            ).data,
-        }
+        return _offer_write_response(instance)
