@@ -106,3 +106,43 @@ class OrderCreateTests(APITestCase):
             self.url, {"offer_detail_id": 9999}, format="json"
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+
+class OrderListTests(APITestCase):
+    """GET /api/orders/ — returns orders involving the requester."""
+
+    url = "/api/orders/"
+
+    def _make_order(self, customer, business):
+        return Order.objects.create(
+            customer_user=customer, business_user=business,
+            title="x", revisions=1, delivery_time_in_days=3,
+            price=Decimal("50.00"), features=[], offer_type="basic",
+        )
+
+    def test_customer_sees_their_own_orders(self):
+        biz = make_user("biz", "business")
+        cust = make_user("cust")
+        other_cust = make_user("other_cust")
+        mine = self._make_order(cust, biz)
+        self._make_order(other_cust, biz)
+        self.client.force_authenticate(user=cust)
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        ids = [row["id"] for row in response.data]
+        self.assertEqual(ids, [mine.id])
+
+    def test_business_sees_orders_against_them(self):
+        biz = make_user("biz", "business")
+        cust_a = make_user("cust_a")
+        cust_b = make_user("cust_b")
+        a = self._make_order(cust_a, biz)
+        b = self._make_order(cust_b, biz)
+        self.client.force_authenticate(user=biz)
+        response = self.client.get(self.url)
+        ids = {row["id"] for row in response.data}
+        self.assertEqual(ids, {a.id, b.id})
+
+    def test_anonymous_get_rejected(self):
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
