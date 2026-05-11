@@ -5,6 +5,8 @@ from offer_app.models import OfferDetail
 
 from ..models import Order
 
+ALLOWED_STATUS = {"in_progress", "completed", "cancelled"}
+
 
 class OrderSerializer(serializers.ModelSerializer):
     """Read-only mirror of an Order."""
@@ -54,3 +56,16 @@ class OrderCreateSerializer(serializers.Serializer):
             business_user=detail.offer.user,
             **_snapshot_from_detail(detail),
         )
+
+
+class OrderStatusUpdateSerializer(serializers.ModelSerializer):
+    """PATCH payload — status changes only."""
+
+    class Meta:
+        model = Order
+        fields = ["status"]
+
+    def validate_status(self, value):
+        if value not in ALLOWED_STATUS:
+            raise serializers.ValidationError("Invalid status value.")
+        return value

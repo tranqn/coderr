@@ -11,3 +11,10 @@ class IsCustomerUser(BasePermission):
             return False
         profile = getattr(user, "profile", None)
         return bool(profile and profile.type == "customer")
+
+
+class IsBusinessUserOfOrder(BasePermission):
+    """PATCH — only the order's business user may change status."""
+
+    def has_object_permission(self, request, view, obj):
+        return obj.business_user_id == getattr(request.user, "id", None)

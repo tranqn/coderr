@@ -1,13 +1,18 @@
 """Views for orders."""
 from django.db.models import Q
+from django.http import Http404
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from ..models import Order
-from .permissions import IsCustomerUser
-from .serializers import OrderCreateSerializer, OrderSerializer
+from .permissions import IsBusinessUserOfOrder, IsCustomerUser
+from .serializers import (
+    OrderCreateSerializer,
+    OrderSerializer,
+    OrderStatusUpdateSerializer,
+)
 
 
 class OrderListCreateView(APIView):
@@ -33,3 +38,27 @@ class OrderListCreateView(APIView):
         return Response(
             OrderSerializer(order).data, status=status.HTTP_201_CREATED
         )
+
+
+class OrderDetailView(APIView):
+    """PATCH (business-only) and DELETE for an order."""
+
+    permission_classes = [IsAuthenticated]
+
+    def _get_order(self, pk):
+        try:
+            return Order.objects.get(pk=pk)
+        except Order.DoesNotExist as exc:
+            raise Http404("Order not found.") from exc
+
+    def patch(self, request, pk):
+        order = self._get_order(pk)
+        permission = IsBusinessUserOfOrder()
+        if not permission.has_object_permission(request, self, order):
+            return Response(status=status.HTTP_403_FORBIDDEN)
+        serializer = OrderStatusUpdateSerializer(
+            order, data=request.data, partial=True
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(OrderSerializer(order).data)
