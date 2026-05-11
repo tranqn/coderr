@@ -146,3 +146,47 @@ class OrderListTests(APITestCase):
     def test_anonymous_get_rejected(self):
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+
+def _make_order(customer, business):
+    return Order.objects.create(
+        customer_user=customer, business_user=business,
+        title="x", revisions=1, delivery_time_in_days=3,
+        price=Decimal("50.00"), features=[], offer_type="basic",
+    )
+
+
+class OrderPatchStatusTests(APITestCase):
+    """PATCH /api/orders/{id}/ — business user updates status."""
+
+    def test_business_user_can_patch_status(self):
+        biz = make_user("biz", "business")
+        cust = make_user("cust")
+        order = _make_order(cust, biz)
+        self.client.force_authenticate(user=biz)
+        response = self.client.patch(
+            f"/api/orders/{order.id}/", {"status": "completed"}, format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        order.refresh_from_db()
+        self.assertEqual(order.status, "completed")
+
+    def test_customer_cannot_patch_status(self):
+        biz = make_user("biz", "business")
+        cust = make_user("cust")
+        order = _make_order(cust, biz)
+        self.client.force_authenticate(user=cust)
+        response = self.client.patch(
+            f"/api/orders/{order.id}/", {"status": "completed"}, format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_invalid_status_value_rejected(self):
+        biz = make_user("biz", "business")
+        cust = make_user("cust")
+        order = _make_order(cust, biz)
+        self.client.force_authenticate(user=biz)
+        response = self.client.patch(
+            f"/api/orders/{order.id}/", {"status": "garbage"}, format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
