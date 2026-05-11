@@ -190,3 +190,68 @@ class OrderPatchStatusTests(APITestCase):
             f"/api/orders/{order.id}/", {"status": "garbage"}, format="json"
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+
+class OrderDeleteTests(APITestCase):
+    """DELETE /api/orders/{id}/ — staff only."""
+
+    def test_staff_can_delete(self):
+        biz = make_user("biz", "business")
+        cust = make_user("cust")
+        order = _make_order(cust, biz)
+        staff = User.objects.create_user(
+            username="admin", email="a@e.com", password="x" * 12, is_staff=True
+        )
+        self.client.force_authenticate(user=staff)
+        response = self.client.delete(f"/api/orders/{order.id}/")
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(Order.objects.filter(id=order.id).exists())
+
+    def test_non_staff_cannot_delete(self):
+        biz = make_user("biz", "business")
+        cust = make_user("cust")
+        order = _make_order(cust, biz)
+        self.client.force_authenticate(user=biz)
+        response = self.client.delete(f"/api/orders/{order.id}/")
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertTrue(Order.objects.filter(id=order.id).exists())
+
+
+class OrderCountEndpointsTests(APITestCase):
+    """GET /api/order-count/{id}/ and /api/completed-order-count/{id}/."""
+
+    def test_in_progress_count(self):
+        biz = make_user("biz", "business")
+        cust = make_user("cust")
+        _make_order(cust, biz)
+        completed = _make_order(cust, biz)
+        completed.status = "completed"
+        completed.save(update_fields=["status"])
+        self.client.force_authenticate(user=cust)
+        response = self.client.get(f"/api/order-count/{biz.id}/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data, {"order_count": 1})
+
+    def test_completed_count(self):
+        biz = make_user("biz", "business")
+        cust = make_user("cust")
+        done = _make_order(cust, biz)
+        done.status = "completed"
+        done.save(update_fields=["status"])
+        _make_order(cust, biz)
+        self.client.force_authenticate(user=cust)
+        response = self.client.get(f"/api/completed-order-count/{biz.id}/")
+        self.assertEqual(response.data, {"completed_order_count": 1})
+
+    def test_count_404_for_unknown_business_user(self):
+        cust = make_user("cust")
+        self.client.force_authenticate(user=cust)
+        response = self.client.get("/api/order-count/9999/")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_count_404_for_non_business_user(self):
+        cust_a = make_user("cust_a")
+        cust_b = make_user("cust_b")
+        self.client.force_authenticate(user=cust_a)
+        response = self.client.get(f"/api/order-count/{cust_b.id}/")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
