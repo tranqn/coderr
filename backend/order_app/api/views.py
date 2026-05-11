@@ -1,4 +1,5 @@
-"""Views for orders."""
+"""Views for orders and the count helpers."""
+from django.contrib.auth import get_user_model
 from django.db.models import Q
 from django.http import Http404
 from rest_framework import status
@@ -7,12 +8,18 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from ..models import Order
-from .permissions import IsBusinessUserOfOrder, IsCustomerUser
+from .permissions import (
+    IsAdminForDelete,
+    IsBusinessUserOfOrder,
+    IsCustomerUser,
+)
 from .serializers import (
     OrderCreateSerializer,
     OrderSerializer,
     OrderStatusUpdateSerializer,
 )
+
+User = get_user_model()
 
 
 class OrderListCreateView(APIView):
@@ -62,3 +69,48 @@ class OrderDetailView(APIView):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(OrderSerializer(order).data)
+
+    def delete(self, request, pk):
+        if not IsAdminForDelete().has_permission(request, self):
+            return Response(status=status.HTTP_403_FORBIDDEN)
+        order = self._get_order(pk)
+        order.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+def _ensure_business_user(business_user_id):
+    """Return the user or raise 404 when missing or not a business profile."""
+    try:
+        user = User.objects.select_related("profile").get(pk=business_user_id)
+    except User.DoesNotExist as exc:
+        raise Http404("Business user not found.") from exc
+    profile = getattr(user, "profile", None)
+    if not profile or profile.type != "business":
+        raise Http404("Business user not found.")
+    return user
+
+
+class OrderCountView(APIView):
+    """GET /api/order-count/{business_user_id}/."""
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, business_user_id):
+        user = _ensure_business_user(business_user_id)
+        count = Order.objects.filter(
+            business_user=user, status="in_progress"
+        ).count()
+        return Response({"order_count": count})
+
+
+class CompletedOrderCountView(APIView):
+    """GET /api/completed-order-count/{business_user_id}/."""
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, business_user_id):
+        user = _ensure_business_user(business_user_id)
+        count = Order.objects.filter(
+            business_user=user, status="completed"
+        ).count()
+        return Response({"completed_order_count": count})

@@ -18,3 +18,11 @@ class IsBusinessUserOfOrder(BasePermission):
 
     def has_object_permission(self, request, view, obj):
         return obj.business_user_id == getattr(request.user, "id", None)
+
+
+class IsAdminForDelete(BasePermission):
+    """DELETE — staff only, regardless of ownership."""
+
+    def has_permission(self, request, view):
+        user = request.user
+        return bool(user and user.is_authenticated and user.is_staff)
