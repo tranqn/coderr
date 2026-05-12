@@ -95,3 +95,60 @@ class ReviewListTests(APITestCase):
         response = self.client.get(self.url, {"ordering": "-rating"})
         ratings = [r["rating"] for r in response.data]
         self.assertEqual(ratings, [5, 2])
+
+
+class ReviewCreateTests(APITestCase):
+    """POST /api/reviews/."""
+
+    url = "/api/reviews/"
+
+    def test_customer_can_create_review(self):
+        biz = make_user("biz", "business")
+        cust = make_user("cust")
+        self.client.force_authenticate(user=cust)
+        response = self.client.post(
+            self.url,
+            {"business_user": biz.id, "rating": 5, "description": "great"},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        review = Review.objects.get()
+        self.assertEqual(review.reviewer, cust)
+        self.assertEqual(review.business_user, biz)
+        self.assertEqual(review.rating, 5)
+
+    def test_business_user_cannot_create_review(self):
+        biz = make_user("biz", "business")
+        other_biz = make_user("other_biz", "business")
+        self.client.force_authenticate(user=biz)
+        response = self.client.post(
+            self.url,
+            {"business_user": other_biz.id, "rating": 3, "description": "x"},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_duplicate_review_rejected(self):
+        biz = make_user("biz", "business")
+        cust = make_user("cust")
+        Review.objects.create(
+            business_user=biz, reviewer=cust, rating=3, description="ok"
+        )
+        self.client.force_authenticate(user=cust)
+        response = self.client.post(
+            self.url,
+            {"business_user": biz.id, "rating": 5, "description": "again"},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_rating_out_of_range_rejected(self):
+        biz = make_user("biz", "business")
+        cust = make_user("cust")
+        self.client.force_authenticate(user=cust)
+        response = self.client.post(
+            self.url,
+            {"business_user": biz.id, "rating": 9, "description": "x"},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
