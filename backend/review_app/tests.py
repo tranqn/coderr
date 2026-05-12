@@ -152,3 +152,65 @@ class ReviewCreateTests(APITestCase):
             format="json",
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+
+class ReviewPatchDeleteTests(APITestCase):
+    """PATCH/DELETE /api/reviews/{id}/ — author only."""
+
+    def _make_review(self):
+        biz = make_user("biz", "business")
+        cust = make_user("cust")
+        review = Review.objects.create(
+            business_user=biz, reviewer=cust, rating=3, description="meh"
+        )
+        return biz, cust, review
+
+    def test_author_can_patch_rating_and_description(self):
+        biz, cust, review = self._make_review()
+        self.client.force_authenticate(user=cust)
+        response = self.client.patch(
+            f"/api/reviews/{review.id}/",
+            {"rating": 5, "description": "great"},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        review.refresh_from_db()
+        self.assertEqual(review.rating, 5)
+        self.assertEqual(review.description, "great")
+
+    def test_patch_ignores_disallowed_fields(self):
+        biz, cust, review = self._make_review()
+        other_biz = make_user("other_biz", "business")
+        self.client.force_authenticate(user=cust)
+        response = self.client.patch(
+            f"/api/reviews/{review.id}/",
+            {"business_user": other_biz.id, "rating": 4},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        review.refresh_from_db()
+        self.assertEqual(review.business_user_id, biz.id)
+        self.assertEqual(review.rating, 4)
+
+    def test_non_author_cannot_patch(self):
+        biz, cust, review = self._make_review()
+        intruder = make_user("intruder")
+        self.client.force_authenticate(user=intruder)
+        response = self.client.patch(
+            f"/api/reviews/{review.id}/", {"rating": 1}, format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_author_can_delete(self):
+        biz, cust, review = self._make_review()
+        self.client.force_authenticate(user=cust)
+        response = self.client.delete(f"/api/reviews/{review.id}/")
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(Review.objects.filter(id=review.id).exists())
+
+    def test_non_author_cannot_delete(self):
+        biz, cust, review = self._make_review()
+        intruder = make_user("intruder")
+        self.client.force_authenticate(user=intruder)
+        response = self.client.delete(f"/api/reviews/{review.id}/")
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
