@@ -1,3 +1,8 @@
+"""URL routes for review_app."""
 from django.urls import path
 
-urlpatterns = []
+from .views import ReviewListCreateView
+
+urlpatterns = [
+    path("reviews/", ReviewListCreateView.as_view(), name="review-list-create"),
+]
