@@ -11,3 +11,10 @@ class IsCustomerProfile(BasePermission):
             return False
         profile = getattr(user, "profile", None)
         return bool(profile and profile.type == "customer")
+
+
+class IsReviewAuthor(BasePermission):
+    """Only the reviewer may modify or delete their review."""
+
+    def has_object_permission(self, request, view, obj):
+        return obj.reviewer_id == getattr(request.user, "id", None)

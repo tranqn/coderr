@@ -1,12 +1,16 @@
 """Views for reviews."""
+from django.http import Http404
 from rest_framework import status
 from rest_framework.generics import ListCreateAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from ..models import Review
-from .permissions import IsCustomerProfile
+from .permissions import IsCustomerProfile, IsReviewAuthor
 from .serializers import ReviewCreateSerializer, ReviewSerializer
+
+ALLOWED_PATCH_FIELDS = {"rating", "description"}
 
 
 class ReviewListCreateView(ListCreateAPIView):
@@ -45,3 +49,41 @@ class ReviewListCreateView(ListCreateAPIView):
         return Response(
             ReviewSerializer(review).data, status=status.HTTP_201_CREATED
         )
+
+
+class ReviewDetailView(APIView):
+    """PATCH/DELETE /api/reviews/{id}/ — author only."""
+
+    permission_classes = [IsAuthenticated]
+
+    def _get_review(self, pk):
+        try:
+            return Review.objects.get(pk=pk)
+        except Review.DoesNotExist as exc:
+            raise Http404("Review not found.") from exc
+
+    def _ensure_author(self, request, review):
+        if not IsReviewAuthor().has_object_permission(request, self, review):
+            return Response(status=status.HTTP_403_FORBIDDEN)
+        return None
+
+    def patch(self, request, pk):
+        review = self._get_review(pk)
+        denied = self._ensure_author(request, review)
+        if denied:
+            return denied
+        payload = {
+            k: v for k, v in request.data.items() if k in ALLOWED_PATCH_FIELDS
+        }
+        serializer = ReviewSerializer(review, data=payload, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
+
+    def delete(self, request, pk):
+        review = self._get_review(pk)
+        denied = self._ensure_author(request, review)
+        if denied:
+            return denied
+        review.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
