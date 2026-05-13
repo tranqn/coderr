@@ -1,20 +1,80 @@
-# Coderr Backend
+# Coderr — Backend (Django + DRF)
 
-A Django REST Framework backend for the Coderr marketplace.
+Coderr is a Fiverr-like service marketplace where business users publish tiered offers (basic / standard / premium) and customers can place orders, leave reviews, and browse the public catalogue. This repository contains the **backend only** — a Django REST Framework API consumed by a separate static frontend.
 
-> **Status:** work in progress. The full setup and endpoint
-> documentation will land on the final day of the build.
+## Stack
 
-## Quickstart (dev)
+- Python 3.13 or 3.14
+- Django 6.0
+- Django REST Framework 3.17
+- Token authentication
+- SQLite (development)
+- django-filter, django-cors-headers, Pillow
+
+## Setup
 
 ```bash
-python3 -m venv env
-source env/bin/activate
+cd backend
+python -m venv env
+source env/bin/activate            # Windows: env\Scripts\activate
 pip install -r requirements.txt
-cp .env.example .env
+
+cp .env.example .env                # then edit DJANGO_SECRET_KEY
 python manage.py migrate
 python manage.py createsuperuser
 python manage.py runserver
 ```
 
-The API is mounted under `/api/`.
+The API is reachable at `http://127.0.0.1:8000/api/`, the admin at `http://127.0.0.1:8000/admin/`.
+
+## Running the frontend
+
+The static frontend lives at `../frontend/`. From a second terminal:
+
+```bash
+cd ../frontend
+python -m http.server 5500
+```
+
+Then open `http://127.0.0.1:5500/`. CORS is enabled for development.
+
+## API endpoints
+
+| Method               | Path                                             | Notes                                                                                                                     |
+| -------------------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------- |
+| POST                 | `/api/registration/`                             | Public; returns `{token, username, email, user_id}`                                                                       |
+| POST                 | `/api/login/`                                    | Public                                                                                                                    |
+| GET / PATCH          | `/api/profile/{user_id}/`                        | PATCH: owner only                                                                                                         |
+| GET                  | `/api/profiles/business/`                        | Authenticated                                                                                                             |
+| GET                  | `/api/profiles/customer/`                        | Authenticated                                                                                                             |
+| GET / POST           | `/api/offers/`                                   | POST: `business` profile only; supports `creator_id`, `min_price`, `max_delivery_time`, `ordering`, `search`, `page_size` |
+| GET / PATCH / DELETE | `/api/offers/{id}/`                              | PATCH/DELETE: creator only                                                                                                |
+| GET                  | `/api/offerdetails/{id}/`                        | Authenticated                                                                                                             |
+| GET / POST           | `/api/orders/`                                   | POST: `customer` profile only                                                                                             |
+| PATCH                | `/api/orders/{id}/`                              | Business user of the order only                                                                                           |
+| DELETE               | `/api/orders/{id}/`                              | Staff (admin) only                                                                                                        |
+| GET                  | `/api/order-count/{business_user_id}/`           | Counts `in_progress` orders                                                                                               |
+| GET                  | `/api/completed-order-count/{business_user_id}/` | Counts `completed` orders                                                                                                 |
+| GET / POST           | `/api/reviews/`                                  | POST: `customer` profile only; one review per (business_user, reviewer)                                                   |
+| PATCH / DELETE       | `/api/reviews/{id}/`                             | Author only; PATCH limited to `rating`, `description`                                                                     |
+| GET                  | `/api/base-info/`                                | Public; aggregated stats                                                                                                  |
+
+## Notable behaviour
+
+- **Empty-string convention**: profile responses never return `null` for `first_name`, `last_name`, `location`, `tel`, `description`, `working_hours`, or `file` — empty values are returned as `""`.
+- **Offer PATCH**: nested details are matched by `offer_type`, not by `id`. Existing detail IDs remain stable across updates.
+- **Snapshot orders**: an order copies title, revisions, delivery time, price, features, and offer_type from the source `OfferDetail` at creation time. Subsequent edits to the offer do not change historical orders.
+- **Pagination**: `/api/offers/` uses page-number pagination with a default of 6 items per page; the frontend's `PAGE_SIZE` constant matches.
+
+## Authentication
+
+Send `Authorization: Token <key>` on every authenticated request. Tokens are returned by `/api/registration/` and `/api/login/`.
+
+## Tests & coverage
+
+```bash
+coverage run --source=auth_app,profile_app,offer_app,order_app,review_app,base_info_app manage.py test
+coverage report -m
+```
+
+Coverage target: ≥ 95 %.
