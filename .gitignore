@@ -1,6 +1,7 @@
 backend/env/
 backend/db.sqlite3
 backend/.env
+backend/.coverage
 backend/**/__pycache__/
 backend/**/*.pyc
 backend/media/
