@@ -1,5 +1,6 @@
 """Offer and OfferDetail models."""
 from django.conf import settings
+from django.core.validators import MinValueValidator
 from django.db import models
 
 OFFER_TYPES = [
@@ -40,7 +41,9 @@ class OfferDetail(models.Model):
     )
     title = models.CharField(max_length=255)
     revisions = models.IntegerField()
-    delivery_time_in_days = models.PositiveIntegerField()
+    delivery_time_in_days = models.PositiveIntegerField(
+        validators=[MinValueValidator(1)]
+    )
     price = models.DecimalField(max_digits=10, decimal_places=2)
     features = models.JSONField(default=list)
     offer_type = models.CharField(max_length=20, choices=OFFER_TYPES)
