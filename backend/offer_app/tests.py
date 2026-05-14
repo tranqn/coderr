@@ -262,6 +262,17 @@ class OfferCreateTests(APITestCase):
         response = self.client.post(self.url, self._payload(), format="json")
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
+    def test_delivery_time_must_be_at_least_one_day(self):
+        # The frontend renders 0-day delivery as an error tile because
+        # `!0` is truthy in JS; reject zero at the API edge instead.
+        biz = make_business()
+        self.client.force_authenticate(user=biz)
+        payload = self._payload()
+        payload["details"][0]["delivery_time_in_days"] = 0
+        response = self.client.post(self.url, payload, format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(Offer.objects.count(), 0)
+
 
 class OfferPatchTests(APITestCase):
     """PATCH /api/offers/{id}/."""
