@@ -11,7 +11,36 @@ Coderr is a Fiverr-like service marketplace where business users publish tiered 
 - SQLite (development)
 - django-filter, django-cors-headers, Pillow
 
-## Setup
+## Quickstart
+
+Copy-paste block for a runnable instance in under a minute, including
+realistic demo data:
+
+```bash
+git clone https://github.com/tranqn/coderr.git
+cd coderr/backend
+python -m venv env && source env/bin/activate
+pip install -r requirements.txt
+cp .env.example .env
+python manage.py migrate
+python manage.py seed_demo_data       # optional — fills the DB with demo content
+python manage.py runserver
+```
+
+**Demo logins** (after running `seed_demo_data`). Password for every
+demo account is `demo-pw-12345`.
+
+| Role     | Usernames                                       |
+|----------|-------------------------------------------------|
+| Business | `b_designer`, `b_developer`, `b_translator`, `b_copywriter` |
+| Customer | `c_anna`, `c_ben`, `c_clara`, `c_dario`         |
+
+The full demo blueprint is in
+`base_info_app/management/commands/seed_demo_data.py`.
+
+To wipe and reseed: `python manage.py seed_demo_data --reset`.
+
+## Setup (manual / production-style)
 
 ```bash
 cd backend
