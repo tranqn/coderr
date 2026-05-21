@@ -9,6 +9,8 @@
 | `backend/`  | Django + DRF API, SQLite, token auth     | [`backend/README.md`](./backend/README.md)   |
 | `frontend/` | Static HTML / CSS / JS, JSDoc            | [`frontend/README.md`](./frontend/README.md) |
 
+The `frontend/` directory is taken from the Developer Akademie reference template at [Developer-Akademie-Backendkurs/project.Coderr](https://github.com/Developer-Akademie-Backendkurs/project.Coderr/blob/main/README.md) and is consumed as-is. All backend code in this repository is original.
+
 ## Quickstart
 
 ```bash
