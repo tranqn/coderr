@@ -2,45 +2,45 @@
 
 ![Coderr Logo](assets/logo/logo_coderr.svg)
 
-Dieses Projekt ist ein einfaches Frontend, das mit **Vanilla JavaScript** (reines JavaScript ohne Frameworks) erstellt wurde. Es wurde speziell entwickelt, um Schülern der **Developer Akademie** mit Backend-Erfahrung den Einstieg in kleinere Frontend-Anpassungen zu erleichtern.
+This project is a small frontend built with **Vanilla JavaScript** (plain JavaScript without any framework). It is designed to give students of the **Developer Akademie** with backend experience an easy entry point to small frontend tweaks.
 
 ---
 
-## Voraussetzungen
+## Prerequisites
 
-- Ein funktionierendes Django-Backend (`Coderr/`), das **nicht** in diesem Projekt enthalten ist.
-- Visual Studio Code mit der **Live Server**-Erweiterung oder eine ähnliche Möglichkeit, die `index.html` lokal im Browser zu starten.
-
----
-
-## Nutzung
-
-1. Stelle sicher, dass das Backend `Coderr/` läuft.
-2. Öffne dieses Projekt in **Visual Studio Code**.
-3. Rechtsklicke auf die Datei `index.html` und wähle **Open with Live Server**, um das Projekt zu starten.
+- A running Django backend (`Coderr/`), which is **not** part of this project.
+- Visual Studio Code with the **Live Server** extension, or any other way to open `index.html` locally in a browser.
 
 ---
 
-## Ziel des Projekts
+## Usage
 
-Dieses Frontend wurde bewusst mit **Vanilla JavaScript** erstellt, um die folgenden Ziele zu erreichen:
-
-- **Einfacher Einstieg**: Durch den Verzicht auf Frameworks wie React oder Angular bleibt der Code leicht verständlich und nachvollziehbar.
-- **Lernen durch Anpassung**: Schüler können den Code anpassen, um kleine Änderungen vorzunehmen und Frontend-Konzepte besser zu verstehen.
-- **Backend-Erweiterung**: Das Projekt lässt sich einfach an das bestehende Django-Backend `Coderr/` anbinden.
+1. Make sure the `Coderr/` backend is running.
+2. Open this project in **Visual Studio Code**.
+3. Right-click `index.html` and choose **Open with Live Server** to launch the project.
 
 ---
 
-## Hinweis
+## Project goal
 
-Dieses Projekt ist **ausschließlich für Schüler der Developer Akademie** gedacht und nicht zur freien Nutzung oder Weitergabe freigegeben.
+This frontend is intentionally built with **Vanilla JavaScript** to achieve the following:
+
+- **Low entry barrier**: by avoiding frameworks such as React or Angular, the code stays readable and easy to follow.
+- **Learning by adjusting**: students can tweak the code to make small changes and build intuition for frontend concepts.
+- **Backend extension**: the project plugs into the existing Django backend `Coderr/` without ceremony.
 
 ---
 
-## JSDoc - ansehen
+## Notice
 
-1. Navigiere in den Ordner `docs/`
-2. Du kannst das Projekt öffnen mit Doppelklick auf `docs/index.html`, oder im Terminal 
-    Windows: `start docs/index.html`
-    macOS: `open docs/index.html`
-    Linus: `xdg-open docs/index.html` 
+This project is intended **only for students of the Developer Akademie** and is not licensed for general use or redistribution.
+
+---
+
+## JSDoc — view the docs
+
+1. Navigate into the `docs/` folder.
+2. Open the docs by double-clicking `docs/index.html`, or from the terminal:
+    - Windows: `start docs/index.html`
+    - macOS: `open docs/index.html`
+    - Linux: `xdg-open docs/index.html`
