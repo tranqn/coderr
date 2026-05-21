@@ -78,8 +78,8 @@ Then open `http://127.0.0.1:5500/`. CORS is enabled for development.
 | GET                  | `/api/profiles/business/`                        | Authenticated                                                                                                             |
 | GET                  | `/api/profiles/customer/`                        | Authenticated                                                                                                             |
 | GET / POST           | `/api/offers/`                                   | GET: public; POST: `business` profile only; supports `creator_id`, `min_price`, `max_delivery_time`, `ordering`, `search`, `page_size` |
-| GET / PATCH / DELETE | `/api/offers/{id}/`                              | GET: public; PATCH/DELETE: creator only                                                                                   |
-| GET                  | `/api/offerdetails/{id}/`                        | Public                                                                                                                    |
+| GET / PATCH / DELETE | `/api/offers/{id}/`                              | Authenticated; PATCH/DELETE: creator only                                                                                 |
+| GET                  | `/api/offerdetails/{id}/`                        | Authenticated                                                                                                             |
 | GET / POST           | `/api/orders/`                                   | POST: `customer` profile only                                                                                             |
 | PATCH                | `/api/orders/{id}/`                              | Business user of the order only                                                                                           |
 | DELETE               | `/api/orders/{id}/`                              | Staff (admin) only                                                                                                        |
