@@ -23,6 +23,7 @@ python -m venv env && source env/bin/activate
 pip install -r requirements.txt
 cp .env.example .env
 python manage.py migrate
+python manage.py createsuperuser      # optional — admin user for /admin/
 python manage.py seed_demo_data       # optional — fills the DB with demo content
 python manage.py runserver
 ```
@@ -76,9 +77,9 @@ Then open `http://127.0.0.1:5500/`. CORS is enabled for development.
 | GET / PATCH          | `/api/profile/{user_id}/`                        | PATCH: owner only                                                                                                         |
 | GET                  | `/api/profiles/business/`                        | Authenticated                                                                                                             |
 | GET                  | `/api/profiles/customer/`                        | Authenticated                                                                                                             |
-| GET / POST           | `/api/offers/`                                   | POST: `business` profile only; supports `creator_id`, `min_price`, `max_delivery_time`, `ordering`, `search`, `page_size` |
-| GET / PATCH / DELETE | `/api/offers/{id}/`                              | PATCH/DELETE: creator only                                                                                                |
-| GET                  | `/api/offerdetails/{id}/`                        | Authenticated                                                                                                             |
+| GET / POST           | `/api/offers/`                                   | GET: public; POST: `business` profile only; supports `creator_id`, `min_price`, `max_delivery_time`, `ordering`, `search`, `page_size` |
+| GET / PATCH / DELETE | `/api/offers/{id}/`                              | GET: public; PATCH/DELETE: creator only                                                                                   |
+| GET                  | `/api/offerdetails/{id}/`                        | Public                                                                                                                    |
 | GET / POST           | `/api/orders/`                                   | POST: `customer` profile only                                                                                             |
 | PATCH                | `/api/orders/{id}/`                              | Business user of the order only                                                                                           |
 | DELETE               | `/api/orders/{id}/`                              | Staff (admin) only                                                                                                        |
@@ -100,6 +101,18 @@ Then open `http://127.0.0.1:5500/`. CORS is enabled for development.
 Send `Authorization: Token <key>` on every authenticated request. Tokens are returned by `/api/registration/` and `/api/login/`.
 
 ## Tests & coverage
+
+Two runners are supported — pick either, the tests are identical.
+
+```bash
+# Django built-in runner
+python manage.py test
+
+# pytest (via pytest-django, see pytest.ini)
+pytest
+```
+
+With coverage:
 
 ```bash
 coverage run --source=auth_app,profile_app,offer_app,order_app,review_app,base_info_app manage.py test
