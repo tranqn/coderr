@@ -14,7 +14,7 @@ class IsBusinessUser(BasePermission):
 
 
 class IsOfferOwnerOrReadOnly(BasePermission):
-    """Read for any authenticated user; write only for the offer's creator."""
+    """Read for anyone; write only for the offer's creator."""
 
     def has_object_permission(self, request, view, obj):
         if request.method in SAFE_METHODS:

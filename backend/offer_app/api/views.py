@@ -5,7 +5,7 @@ from rest_framework.generics import (
     RetrieveAPIView,
     RetrieveUpdateDestroyAPIView,
 )
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated
 
 from ..models import Offer, OfferDetail
 from .filters import OfferFilter
@@ -41,7 +41,7 @@ class OfferListCreateView(ListCreateAPIView):
     def get_permissions(self):
         if self.request.method == "POST":
             return [IsAuthenticated(), IsBusinessUser()]
-        return [IsAuthenticated()]
+        return [AllowAny()]
 
     def get_serializer_class(self):
         if self.request.method == "POST":
@@ -56,7 +56,7 @@ class OfferDetailView(RetrieveUpdateDestroyAPIView):
     """GET/PATCH/DELETE /api/offers/{id}/."""
 
     queryset = Offer.objects.select_related("user").prefetch_related("details")
-    permission_classes = [IsAuthenticated, IsOfferOwnerOrReadOnly]
+    permission_classes = [IsOfferOwnerOrReadOnly]
     http_method_names = ["get", "patch", "delete", "head", "options"]
 
     def get_serializer_class(self):
@@ -70,4 +70,4 @@ class OfferDetailItemView(RetrieveAPIView):
 
     queryset = OfferDetail.objects.all()
     serializer_class = OfferDetailFullSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
