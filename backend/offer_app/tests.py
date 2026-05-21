@@ -97,13 +97,12 @@ class OfferDetailItemTests(APITestCase):
         response = self.client.get("/api/offerdetails/999999/")
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
-    def test_get_is_public_no_auth(self):
+    def test_get_requires_authentication(self):
         owner = make_business()
         offer = make_offer_with_details(owner)
         detail = offer.details.first()
         response = self.client.get(f"/api/offerdetails/{detail.id}/")
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data["id"], detail.id)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
 
 class OfferRetrieveTests(APITestCase):
@@ -133,12 +132,25 @@ class OfferRetrieveTests(APITestCase):
         response = self.client.get("/api/offers/999999/")
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
-    def test_offer_retrieve_is_public_no_auth(self):
+    def test_offer_retrieve_requires_authentication(self):
         owner = make_business()
         offer = make_offer_with_details(owner)
         response = self.client.get(f"/api/offers/{offer.id}/")
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data["id"], offer.id)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_offer_patch_anonymous_returns_401(self):
+        owner = make_business()
+        offer = make_offer_with_details(owner)
+        response = self.client.patch(
+            f"/api/offers/{offer.id}/", {"title": "x"}, format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_offer_delete_anonymous_returns_401(self):
+        owner = make_business()
+        offer = make_offer_with_details(owner)
+        response = self.client.delete(f"/api/offers/{offer.id}/")
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
 
 class OfferListTests(APITestCase):
