@@ -97,12 +97,13 @@ class OfferDetailItemTests(APITestCase):
         response = self.client.get("/api/offerdetails/999999/")
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
-    def test_get_requires_authentication(self):
+    def test_get_is_public_no_auth(self):
         owner = make_business()
         offer = make_offer_with_details(owner)
         detail = offer.details.first()
         response = self.client.get(f"/api/offerdetails/{detail.id}/")
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["id"], detail.id)
 
 
 class OfferRetrieveTests(APITestCase):
@@ -131,6 +132,13 @@ class OfferRetrieveTests(APITestCase):
         self.client.force_authenticate(user=viewer)
         response = self.client.get("/api/offers/999999/")
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_offer_retrieve_is_public_no_auth(self):
+        owner = make_business()
+        offer = make_offer_with_details(owner)
+        response = self.client.get(f"/api/offers/{offer.id}/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["id"], offer.id)
 
 
 class OfferListTests(APITestCase):
@@ -203,9 +211,11 @@ class OfferListTests(APITestCase):
         prices = [r["min_price"] for r in response.data["results"]]
         self.assertEqual(prices, sorted(prices))
 
-    def test_list_requires_authentication(self):
+    def test_list_is_public_no_auth(self):
+        self._seed_offers()
         response = self.client.get(self.url)
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["count"], 2)
 
 
 class OfferCreateTests(APITestCase):
