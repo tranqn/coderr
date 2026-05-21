@@ -56,7 +56,7 @@ class OfferDetailView(RetrieveUpdateDestroyAPIView):
     """GET/PATCH/DELETE /api/offers/{id}/."""
 
     queryset = Offer.objects.select_related("user").prefetch_related("details")
-    permission_classes = [IsOfferOwnerOrReadOnly]
+    permission_classes = [IsAuthenticated, IsOfferOwnerOrReadOnly]
     http_method_names = ["get", "patch", "delete", "head", "options"]
 
     def get_serializer_class(self):
@@ -70,4 +70,4 @@ class OfferDetailItemView(RetrieveAPIView):
 
     queryset = OfferDetail.objects.all()
     serializer_class = OfferDetailFullSerializer
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
