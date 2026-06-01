@@ -1,0 +1,22 @@
+# Keep the build context small and free of host-only / secret files.
+**/__pycache__/
+**/*.pyc
+backend/env/
+backend/.venv/
+backend/.pytest_cache/
+backend/.coverage
+backend/htmlcov/
+backend/db.sqlite3
+backend/.env
+backend/media/
+backend/staticfiles/
+backend/data/
+
+.git/
+.gitignore
+.env
+.DS_Store
+**/.DS_Store
+.obsidian/
+.vscode/
+*.md
