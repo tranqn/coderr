@@ -57,6 +57,15 @@ python manage.py runserver
 
 The API is reachable at `http://127.0.0.1:8000/api/`, the admin at `http://127.0.0.1:8000/admin/`.
 
+## Docker
+
+For a containerized deployment of the full stack (this API under Gunicorn plus
+the nginx-served frontend), use the Compose setup in the repository root — see
+the [Docker deployment](../README.md#docker-deployment) section. The image
+reads its configuration from environment variables: `DJANGO_SECRET_KEY`,
+`DJANGO_DEBUG`, `DJANGO_ALLOWED_HOSTS`, `DJANGO_CSRF_TRUSTED_ORIGINS` and
+`DJANGO_DB_PATH` (SQLite location).
+
 ## Running the frontend
 
 The static frontend lives at `../frontend/`. From a second terminal:

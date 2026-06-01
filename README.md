@@ -34,6 +34,57 @@ python -m http.server 5500
 
 Then open `http://127.0.0.1:5500/`.
 
+## Docker deployment
+
+The whole app ships as a **single image**: nginx serves the frontend and
+reverse-proxies the API to Gunicorn inside the same container. Everything lives
+behind one origin, so the image runs unchanged on **Linux, Windows and macOS**
+servers — the only requirement is Docker.
+
+### Build and run
+
+```bash
+cd coderr
+docker build -t coderr .
+docker run -d -p 8080:80 \
+  -e DJANGO_SECRET_KEY="$(python -c 'import secrets; print(secrets.token_urlsafe(64))')" \
+  -e DJANGO_DEBUG=False \
+  -e DJANGO_ALLOWED_HOSTS="*" \
+  -v coderr-data:/app/data \
+  --name coderr coderr
+```
+
+Prefer a file over inline `-e` flags? Copy `.env.example` to `.env`, edit it,
+and pass `--env-file .env` instead.
+
+Open `http://localhost:8080/` — admin at `http://localhost:8080/admin/`.
+On a remote server use the host's address (e.g. `http://<server-ip>:8080/`)
+and make sure `DJANGO_ALLOWED_HOSTS` covers that host.
+
+### Configuration
+
+| Variable                      | Purpose                                                        |
+|-------------------------------|----------------------------------------------------------------|
+| `DJANGO_SECRET_KEY`           | **Required.** Long random string.                              |
+| `DJANGO_DEBUG`                | Keep `False` for any public deployment.                        |
+| `DJANGO_ALLOWED_HOSTS`        | Hosts allowed to serve the app (`*` for a quick trial).        |
+| `DJANGO_CSRF_TRUSTED_ORIGINS` | Needed for admin login over HTTPS, e.g. `https://coderr.example.com`. |
+| `SEED_DEMO_DATA`              | `1` to load demo data on first start.                          |
+
+The SQLite database and uploaded media persist in the `/app/data` volume.
+Migrations and `collectstatic` run automatically on container start.
+
+### Manage
+
+```bash
+docker logs -f coderr                                       # follow logs
+docker exec -it coderr python manage.py createsuperuser     # admin user
+docker exec -it coderr python manage.py seed_demo_data --reset
+docker rm -f coderr                                         # stop and remove
+```
+
+The data volume survives `docker rm`; delete it with `docker volume rm coderr-data`.
+
 ## Demo logins
 
 After running `seed_demo_data`. Password for every demo account: `demo-pw-12345`.
