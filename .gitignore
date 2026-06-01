@@ -5,4 +5,7 @@ backend/.coverage
 backend/**/__pycache__/
 backend/**/*.pyc
 backend/media/
+backend/staticfiles/
+# Docker compose env (copied from .env.example, holds the secret key)
+/.env
 .DS_Store
