@@ -14,23 +14,29 @@ fi
 
 cd /app
 
-# 2. Database and static files.
+# A mounted volume may reset ownership of /app/data — make sure the
+# unprivileged app user can write the database and uploads.
+chown -R appuser:appuser /app/data /app/staticfiles
+
+# 2. Database and static files (run unprivileged via gosu).
 echo "Applying database migrations..."
-python manage.py migrate --noinput
+gosu appuser python manage.py migrate --noinput
 
 echo "Collecting static files..."
-python manage.py collectstatic --noinput
+gosu appuser python manage.py collectstatic --noinput
 
 # Optionally seed demo content on an empty database (SEED_DEMO_DATA=1).
 if [ "${SEED_DEMO_DATA:-0}" = "1" ]; then
     echo "Seeding demo data..."
-    python manage.py seed_demo_data
+    gosu appuser python manage.py seed_demo_data
 fi
 
-# 3. Run both processes. Gunicorn in the background, nginx in the foreground.
-#    If Gunicorn exits, stop the container so the orchestrator can restart it.
+# 3. Run both processes: Gunicorn (unprivileged) in the background, nginx in
+#    the foreground. If either exits, stop the container so the orchestrator
+#    can restart it. nginx keeps its root master to bind port 80 and drops its
+#    workers to www-data.
 echo "Starting Gunicorn..."
-gunicorn core.wsgi:application \
+gosu appuser gunicorn core.wsgi:application \
     --bind 127.0.0.1:8000 \
     --workers "${GUNICORN_WORKERS:-3}" &
 GUNICORN_PID=$!
