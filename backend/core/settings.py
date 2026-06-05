@@ -2,18 +2,25 @@
 import os
 from pathlib import Path
 
+from django.core.exceptions import ImproperlyConfigured
 from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 load_dotenv(BASE_DIR / ".env")
 
-SECRET_KEY = os.environ.get(
-    "DJANGO_SECRET_KEY",
-    "django-insecure-dev-only-replace-me-in-production",
-)
-
 DEBUG = os.environ.get("DJANGO_DEBUG", "True").lower() == "true"
+
+# Never fall back to a hard-coded key in production: require it explicitly and
+# fail loudly if it is missing. A throwaway key is only tolerated in DEBUG.
+SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY")
+if not SECRET_KEY:
+    if DEBUG:
+        SECRET_KEY = "django-insecure-dev-only-replace-me-in-production"
+    else:
+        raise ImproperlyConfigured(
+            "DJANGO_SECRET_KEY must be set when DEBUG=False."
+        )
 
 ALLOWED_HOSTS = os.environ.get(
     "DJANGO_ALLOWED_HOSTS", "127.0.0.1,localhost"
@@ -127,5 +134,33 @@ REST_FRAMEWORK = {
     "PAGE_SIZE": 6,
 }
 
-CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
+if DEBUG:
+    # Convenient for local dev where the frontend runs on a separate port.
+    CORS_ALLOW_ALL_ORIGINS = True
+else:
+    # In production the app is same-origin behind nginx, so CORS is usually
+    # unnecessary; allow an explicit allow-list for split deployments.
+    CORS_ALLOWED_ORIGINS = [
+        origin
+        for origin in os.environ.get(
+            "DJANGO_CORS_ALLOWED_ORIGINS", ""
+        ).split(",")
+        if origin
+    ]
+
+# HTTPS hardening. Enabled via DJANGO_SECURE_SSL=True once TLS terminates in
+# front of the app (reverse proxy / load balancer); leaving it off keeps a
+# plain-HTTP deployment working without redirect loops.
+if os.environ.get("DJANGO_SECURE_SSL", "False").lower() == "true":
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+    SECURE_SSL_REDIRECT = True
+    SECURE_HSTS_SECONDS = int(
+        os.environ.get("DJANGO_SECURE_HSTS_SECONDS", "31536000")
+    )
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+
+SECURE_CONTENT_TYPE_NOSNIFF = True
