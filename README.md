@@ -69,10 +69,19 @@ and make sure `DJANGO_ALLOWED_HOSTS` covers that host.
 | `DJANGO_DEBUG`                | Keep `False` for any public deployment.                        |
 | `DJANGO_ALLOWED_HOSTS`        | Hosts allowed to serve the app (`*` for a quick trial).        |
 | `DJANGO_CSRF_TRUSTED_ORIGINS` | Needed for admin login over HTTPS, e.g. `https://coderr.example.com`. |
+| `DJANGO_SECURE_SSL`           | `True` once TLS terminates in front: forces HTTPS redirect, HSTS, secure cookies. Leave `False` for plain HTTP. |
+| `DJANGO_CORS_ALLOWED_ORIGINS` | Cross-origin browser origins allowed to call the API (only with `DEBUG=False`; same-origin needs none). |
 | `SEED_DEMO_DATA`              | `1` to load demo data on first start.                          |
 
 The SQLite database and uploaded media persist in the `/app/data` volume.
-Migrations and `collectstatic` run automatically on container start.
+Migrations and `collectstatic` run automatically on container start. Gunicorn
+runs as an unprivileged user inside the container, and a `HEALTHCHECK` polls
+`/api/base-info/`.
+
+> **Production note:** without a `DJANGO_SECRET_KEY` the app refuses to start
+> when `DEBUG=False`. For a public deployment put a TLS proxy (Caddy, nginx,
+> Cloudflare) in front and set `DJANGO_SECURE_SSL=True`. SQLite suits a
+> low-traffic demo; switch to PostgreSQL for real production load.
 
 ### Manage
 
