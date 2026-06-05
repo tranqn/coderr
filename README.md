@@ -119,6 +119,10 @@ target the `coderr` service, e.g.
 `docker compose -f compose.prod.yml exec coderr python manage.py createsuperuser`.
 Database and media persist in the `pg-data` and `coderr-data` volumes.
 
+A full walkthrough for deploying this stack on a Google Cloud VM (free
+`e2-micro` tier, automatic HTTPS) is in
+[`docs/gcp-deployment.md`](./docs/gcp-deployment.md).
+
 ## Demo logins
 
 After running `seed_demo_data`. Password for every demo account: `demo-pw-12345`.
