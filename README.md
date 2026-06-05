@@ -80,8 +80,9 @@ runs as an unprivileged user inside the container, and a `HEALTHCHECK` polls
 
 > **Production note:** without a `DJANGO_SECRET_KEY` the app refuses to start
 > when `DEBUG=False`. For a public deployment put a TLS proxy (Caddy, nginx,
-> Cloudflare) in front and set `DJANGO_SECURE_SSL=True`. SQLite suits a
-> low-traffic demo; switch to PostgreSQL for real production load.
+> Cloudflare) in front and set `DJANGO_SECURE_SSL=True`. SQLite suits this
+> single-container quick run; for real production use the HTTPS + PostgreSQL
+> stack below.
 
 ### Manage
 
@@ -94,24 +95,29 @@ docker rm -f coderr                                         # stop and remove
 
 The data volume survives `docker rm`; delete it with `docker volume rm coderr-data`.
 
-### Production stack with HTTPS (Caddy)
+### Production stack with HTTPS + PostgreSQL
 
-For a public deployment with automatic TLS, use `compose.prod.yml`, which puts
-[Caddy](https://caddyserver.com/) in front of the app. Caddy obtains and renews
-a Let's Encrypt certificate for your domain; Django's HTTPS hardening
-(`DJANGO_SECURE_SSL=True`) is switched on for you.
+For a public deployment, `compose.prod.yml` runs three services:
+[Caddy](https://caddyserver.com/) (automatic TLS) → the Coderr app →
+**PostgreSQL**. Caddy obtains and renews a Let's Encrypt certificate for your
+domain, Django's HTTPS hardening (`DJANGO_SECURE_SSL=True`) is switched on, and
+setting `POSTGRES_DB` makes the backend use Postgres instead of SQLite.
 
 ```bash
 cp .env.example .env
 # set DJANGO_SECRET_KEY, SITE_ADDRESS=<your-domain>,
 #     DJANGO_ALLOWED_HOSTS=<your-domain>,
-#     DJANGO_CSRF_TRUSTED_ORIGINS=https://<your-domain>
+#     DJANGO_CSRF_TRUSTED_ORIGINS=https://<your-domain>,
+#     POSTGRES_PASSWORD=<strong-password>
 docker compose -f compose.prod.yml up -d --build
 ```
 
 Point the domain's DNS at the server first, and open ports 80 and 443. The app
 is then reachable at `https://<your-domain>/`. For a quick local test set
-`SITE_ADDRESS=localhost` (Caddy issues a self-signed cert).
+`SITE_ADDRESS=localhost` (Caddy issues a self-signed cert). Management commands
+target the `coderr` service, e.g.
+`docker compose -f compose.prod.yml exec coderr python manage.py createsuperuser`.
+Database and media persist in the `pg-data` and `coderr-data` volumes.
 
 ## Demo logins
 

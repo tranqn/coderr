@@ -31,12 +31,37 @@ services:
     environment:
       # TLS terminates at Caddy, so enable the HTTPS hardening in Django.
       DJANGO_SECURE_SSL: "True"
+      # Connect to the Postgres service (presence of POSTGRES_DB switches the
+      # backend from SQLite to PostgreSQL).
+      POSTGRES_HOST: db
+      POSTGRES_DB: ${POSTGRES_DB:?set POSTGRES_DB in .env}
+      POSTGRES_USER: ${POSTGRES_USER:?set POSTGRES_USER in .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
     volumes:
-      - coderr-data:/app/data
+      - coderr-data:/app/data   # uploaded media
     expose:
       - "80"                    # reached only via Caddy, not published
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:?set POSTGRES_DB in .env}
+      POSTGRES_USER: ${POSTGRES_USER:?set POSTGRES_USER in .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 volumes:
   caddy-data:
   caddy-config:
   coderr-data:
+  pg-data:
