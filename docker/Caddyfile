@@ -1,0 +1,9 @@
+# Caddy terminates TLS and reverse-proxies to the Coderr container.
+# SITE_ADDRESS comes from the environment:
+#   - a domain (coderr.example.com)  -> automatic HTTPS via Let's Encrypt
+#   - "localhost"                    -> automatic self-signed cert for testing
+#   - ":80"                          -> plain HTTP, no TLS
+{$SITE_ADDRESS} {
+	encode gzip
+	reverse_proxy coderr:80
+}

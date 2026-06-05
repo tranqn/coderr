@@ -1,0 +1,42 @@
+# Production stack: Caddy (automatic HTTPS) in front of the Coderr app.
+# Multiple services genuinely need orchestration, so this lives in Compose
+# (the single-image `docker run` from the README stays valid for HTTP/quick runs).
+#
+#   cp .env.example .env          # set DJANGO_SECRET_KEY, SITE_ADDRESS, hosts
+#   docker compose -f compose.prod.yml up -d --build
+#
+# App: https://<SITE_ADDRESS>/
+
+services:
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"          # HTTP/3
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:?set SITE_ADDRESS to your domain in .env}
+    volumes:
+      - ./docker/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data        # certificates
+      - caddy-config:/config
+    depends_on:
+      - coderr
+
+  coderr:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      # TLS terminates at Caddy, so enable the HTTPS hardening in Django.
+      DJANGO_SECURE_SSL: "True"
+    volumes:
+      - coderr-data:/app/data
+    expose:
+      - "80"                    # reached only via Caddy, not published
+
+volumes:
+  caddy-data:
+  caddy-config:
+  coderr-data:

@@ -94,6 +94,25 @@ docker rm -f coderr                                         # stop and remove
 
 The data volume survives `docker rm`; delete it with `docker volume rm coderr-data`.
 
+### Production stack with HTTPS (Caddy)
+
+For a public deployment with automatic TLS, use `compose.prod.yml`, which puts
+[Caddy](https://caddyserver.com/) in front of the app. Caddy obtains and renews
+a Let's Encrypt certificate for your domain; Django's HTTPS hardening
+(`DJANGO_SECURE_SSL=True`) is switched on for you.
+
+```bash
+cp .env.example .env
+# set DJANGO_SECRET_KEY, SITE_ADDRESS=<your-domain>,
+#     DJANGO_ALLOWED_HOSTS=<your-domain>,
+#     DJANGO_CSRF_TRUSTED_ORIGINS=https://<your-domain>
+docker compose -f compose.prod.yml up -d --build
+```
+
+Point the domain's DNS at the server first, and open ports 80 and 443. The app
+is then reachable at `https://<your-domain>/`. For a quick local test set
+`SITE_ADDRESS=localhost` (Caddy issues a self-signed cert).
+
 ## Demo logins
 
 After running `seed_demo_data`. Password for every demo account: `demo-pw-12345`.
