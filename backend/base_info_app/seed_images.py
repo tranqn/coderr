@@ -135,23 +135,9 @@ def render_avatar(initials, key, size=512):
 # --------------------------------------------------------------------------- #
 # Offer cover
 # --------------------------------------------------------------------------- #
-def _wrap(draw, text, font, max_w):
-    words, lines, cur = text.split(), [], ""
-    for word in words:
-        trial = f"{cur} {word}".strip()
-        if draw.textlength(trial, font=font) <= max_w or not cur:
-            cur = trial
-        else:
-            lines.append(cur)
-            cur = word
-    if cur:
-        lines.append(cur)
-    return lines
-
-
 def _draw_icon(d, category, w, h):
-    cx, cy = w // 2, int(h * 0.36)
-    s = int(min(w, h) * 0.34)
+    cx, cy = w // 2, h // 2          # centred: survives object-fit cropping
+    s = int(min(w, h) * 0.42)
     fill = (255, 255, 255, 235)
     soft = (255, 255, 255, 70)
 
@@ -226,57 +212,21 @@ def _draw_icon(d, category, w, h):
         d.ellipse([cx - r, cy - r, cx + r, cy + r], fill=fill)
 
 
-def render_offer_cover(title, category, subtitle="", size=(1200, 750)):
-    """Themed offer thumbnail: gradient + category glyph + title band."""
+def render_offer_cover(title="", category="", subtitle="", size=(1200, 750)):
+    """Clean themed offer thumbnail: diagonal gradient + a centred glyph.
+
+    Deliberately text-free: the card UI already shows the offer's title,
+    author and price beneath the image, so baking them in here only
+    duplicates them. ``title`` / ``subtitle`` are accepted for a stable call
+    signature but no longer drawn.
+    """
     w, h = size
     c1, c2 = OFFER_GRADIENTS.get(category, _OFFER_FALLBACK)
     img = _diagonal_gradient((w, h), c1, c2).convert("RGBA")
 
     icon = Image.new("RGBA", (w, h), (0, 0, 0, 0))
     _draw_icon(ImageDraw.Draw(icon), category, w, h)
-    img = Image.alpha_composite(img, icon)
-
-    # bottom scrim for title legibility
-    scrim = Image.new("RGBA", (w, h), (0, 0, 0, 0))
-    sd = ImageDraw.Draw(scrim)
-    top = int(h * 0.62)
-    for i, y in enumerate(range(top, h)):
-        sd.line([(0, y), (w, y)], fill=(0, 0, 0, int(150 * (i / (h - top)))))
-    img = Image.alpha_composite(img, scrim)
-    draw = ImageDraw.Draw(img)
-
-    # category pill (upper-left): dark translucent so white text reads anywhere
-    pf = _bold(26)
-    label = category.upper()
-    pb = draw.textbbox((0, 0), label, font=pf)
-    pw, ph = pb[2] - pb[0], pb[3] - pb[1]
-    px, py, pad = 56, 54, 18
-    draw.rounded_rectangle([px, py, px + pw + pad * 2, py + ph + pad * 2],
-                           radius=(ph + pad * 2) // 2, fill=(0, 0, 0, 70))
-    draw.text((px + pad - pb[0], py + pad - pb[1]), label, font=pf, fill=WHITE)
-
-    # title (wrapped) in the scrim band
-    tf = _bold(64)
-    lines = _wrap(draw, title, tf, w - 112)
-    lh = tf.size + 14
-    ty = h - 64 - lh * len(lines)
-    for ln in lines:
-        draw.text((59, ty + 3), ln, font=tf, fill=(0, 0, 0))
-        draw.text((56, ty), ln, font=tf, fill=WHITE)
-        ty += lh
-
-    # subtitle (business name) above the title band
-    if subtitle:
-        draw.text((56, h - 64 - lh * len(lines) - 44), subtitle,
-                  font=_bold(30), fill=(235, 235, 235))
-
-    # coderr wordmark (upper-right)
-    wf = _bold(30)
-    wb = draw.textbbox((0, 0), "coderr", font=wf)
-    draw.text((w - (wb[2] - wb[0]) - 56, 60), "coderr", font=wf,
-              fill=(230, 230, 230))
-
-    return _to_png(img)
+    return _to_png(Image.alpha_composite(img, icon))
 
 
 # --------------------------------------------------------------------------- #
