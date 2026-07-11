@@ -33,12 +33,19 @@ class ProfileDetailView(APIView):
 
     def get(self, request, pk):
         profile = self._get_profile(pk)
-        return Response(ProfileSerializer(profile).data)
+        # Pass request context so FileField `file` serialises to an absolute
+        # URL; without it DRF returns "/media/..." and the frontend turns that
+        # into a broken protocol-relative "//media/..." src.
+        serializer = ProfileSerializer(profile, context={"request": request})
+        return Response(serializer.data)
 
     def patch(self, request, pk):
         profile = self._get_profile(pk)
         self.check_object_permissions(request, profile)
-        serializer = ProfileSerializer(profile, data=request.data, partial=True)
+        serializer = ProfileSerializer(
+            profile, data=request.data, partial=True,
+            context={"request": request},
+        )
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data, status=status.HTTP_200_OK)
