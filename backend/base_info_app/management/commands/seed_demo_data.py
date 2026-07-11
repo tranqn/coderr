@@ -255,8 +255,9 @@ class Command(BaseCommand):
                 if u.get(field):
                     setattr(profile, field, u[field])
             profile.type = profile_type
-            if not profile.file:
-                self._attach_avatar(profile)
+            # Resync the committed avatar every run so redeploys pick up new
+            # artwork (these are demo accounts; overwriting is intended).
+            self._attach_avatar(profile)
             profile.save()
             verb = "created" if created else "updated"
             self.stdout.write(f"  user {verb}: {user.username}")
@@ -269,8 +270,9 @@ class Command(BaseCommand):
                     user=biz, title=bp["title"],
                     defaults={"description": bp["description"]},
                 )
-                if not offer.image:
-                    self._attach_offer_image(offer, bp)
+                # Resync the committed cover every run so redeploys pick up
+                # new artwork even when the offer already exists.
+                self._attach_offer_image(offer, bp)
                 if not created:
                     continue
                 for tier in bp["tiers"]:
