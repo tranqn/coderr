@@ -8,14 +8,25 @@ Usage:
 The script is idempotent: usernames are reused via ``get_or_create``,
 so a second run does not duplicate accounts. Offers, orders, and
 reviews are only created when the related users do not yet have any.
+
+Each seeded profile and offer also gets a placeholder image: pre-rendered
+PNGs committed under ``base_info_app/seed_assets/`` are copied into
+MEDIA_ROOT, so a reseed always ships avatars and offer covers without needing
+Pillow or a system font on the server. Regenerate those PNGs after a design
+tweak with ``python base_info_app/seed_images.py``.
 """
+import os
 from datetime import timedelta
 from decimal import Decimal
+from pathlib import Path
 
+import base_info_app
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.utils import timezone
+from django.utils.text import slugify
 
 from offer_app.models import Offer, OfferDetail
 from order_app.models import Order
@@ -25,6 +36,9 @@ from review_app.models import Review
 User = get_user_model()
 
 PASSWORD = "demo-pw-12345"
+
+# Pre-rendered PNGs shipped with the code (see base_info_app/seed_images.py).
+SEED_ASSETS = Path(base_info_app.__file__).resolve().parent / "seed_assets"
 
 BUSINESSES = [
     {
@@ -241,6 +255,8 @@ class Command(BaseCommand):
                 if u.get(field):
                     setattr(profile, field, u[field])
             profile.type = profile_type
+            if not profile.file:
+                self._attach_avatar(profile)
             profile.save()
             verb = "created" if created else "updated"
             self.stdout.write(f"  user {verb}: {user.username}")
@@ -253,6 +269,8 @@ class Command(BaseCommand):
                     user=biz, title=bp["title"],
                     defaults={"description": bp["description"]},
                 )
+                if not offer.image:
+                    self._attach_offer_image(offer, bp)
                 if not created:
                     continue
                 for tier in bp["tiers"]:
@@ -266,6 +284,40 @@ class Command(BaseCommand):
                         offer_type=tier["offer_type"],
                     )
                 self.stdout.write(f"  offer created: {biz.username} / {offer.title}")
+
+    # -- image helpers ----------------------------------------------------- #
+    def _copy_asset(self, src, rel_path):
+        """Copy a committed seed PNG into MEDIA_ROOT; return the stored
+        relative path, or None if the asset is missing (never breaks seeding)."""
+        if not src.exists():
+            self.stderr.write(f"  ! seed image missing: {src.name}")
+            return None
+        abs_path = os.path.join(settings.MEDIA_ROOT, rel_path)
+        os.makedirs(os.path.dirname(abs_path), exist_ok=True)
+        with open(abs_path, "wb") as fh:
+            fh.write(src.read_bytes())
+        return rel_path
+
+    def _attach_avatar(self, profile):
+        """Attach the committed monogram avatar for this user."""
+        username = profile.user.username
+        rel = self._copy_asset(
+            SEED_ASSETS / "profiles" / f"{username}.png",
+            f"profiles/{username}.png",
+        )
+        if rel:
+            profile.file.name = rel
+
+    def _attach_offer_image(self, offer, bp):
+        """Attach the committed themed cover for this offer."""
+        slug = slugify(bp["title"])
+        rel = self._copy_asset(
+            SEED_ASSETS / "offers" / f"{slug}.png",
+            f"offers/{slug}.png",
+        )
+        if rel:
+            offer.image.name = rel
+            offer.save(update_fields=["image"])
 
     def _seed_orders(self):
         for recipe in ORDER_RECIPES:
