@@ -20,8 +20,8 @@ jobs:
       run:
         working-directory: backend
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.13"
           cache: pip
@@ -47,7 +47,9 @@ jobs:
     needs: [backend]
     # A push to main and nothing else. pull_request never lands here, so a fork
     # cannot put code on the self-hosted runner.
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    # workflow_dispatch is allowed too: dispatching needs write access on the
+    # repo, so it is a manual redeploy button for me and not a fork's way in.
+    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
     runs-on: [self-hosted, hetzner, deploy]
     concurrency:
       group: deploy-coderr
