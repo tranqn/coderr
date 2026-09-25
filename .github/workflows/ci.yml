@@ -1,0 +1,63 @@
+# Coderr — quality gate on GitHub's runners, deploy on the Hetzner box.
+#
+# The deploy job runs on a self-hosted runner inside my own server, so nothing
+# here may ever be triggered by a fork: the workflow has no pull_request trigger
+# that reaches it, and the job additionally refuses anything but a push to main.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  backend:
+    name: Django checks and tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+      - run: pip install -r requirements.txt
+
+      # No env is set on purpose: settings.py falls back to DEBUG=True, a dev
+      # secret key and SQLite when POSTGRES_DB is absent, which is exactly the
+      # configuration the test suite wants.
+      - name: System checks
+        run: python manage.py check
+
+      # Catches a model edited without its migration — the failure mode that
+      # only shows up on the server, at migrate time, with users watching.
+      - name: Migrations are in sync with the models
+        run: python manage.py makemigrations --check --dry-run
+
+      - name: Tests
+        run: python manage.py test --verbosity 2
+
+  deploy:
+    name: Deploy to Hetzner
+    needs: [backend]
+    # A push to main and nothing else. pull_request never lands here, so a fork
+    # cannot put code on the self-hosted runner.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: [self-hosted, hetzner, deploy]
+    concurrency:
+      group: deploy-coderr
+      cancel-in-progress: false
+    timeout-minutes: 30
+    steps:
+      # No checkout: the runner never materialises repo content. It hands a
+      # commit to a root-owned script that it cannot modify, and that script
+      # refuses any commit which is not already on origin/main.
+      - name: Deploy
+        env:
+          SHA: ${{ github.sha }}
+        run: /opt/ci/bin/deploy coderr "$SHA"
